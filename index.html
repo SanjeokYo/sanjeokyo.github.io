@@ -138,6 +138,49 @@ header{
 .crumbs button:hover{background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text)}
 .crumbs .sep{opacity:.45}
 .crumbs .cur{color:var(--text); padding:3px 6px}
+/* ---------- 메모(스크래치패드) ---------- */
+.tabv.memoTab{margin-bottom:7px; border:1px dashed color-mix(in srgb, var(--accent) 40%, var(--line))}
+#content.memoMode{display:flex; flex-direction:column; overflow:hidden}
+.padWrap{flex:1; min-height:0; display:flex; flex-direction:column; gap:8px}
+.padBar{flex:none; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.padBtn{
+  display:inline-flex; align-items:center; gap:5px; height:32px; padding:0 11px;
+  border-radius:9px; border:1.5px solid var(--line); background:var(--card);
+  font-size:12px; font-weight:800; color:var(--text);
+}
+.padBtn:hover{border-color:var(--accent); color:var(--accent)}
+.padBtn svg{width:13px; height:13px}
+.padMeta{margin-left:auto; font-size:10.5px; color:var(--muted); font-weight:700; text-align:right}
+#padText{
+  flex:1; min-height:0; width:100%; overflow-y:auto; outline:none;
+  white-space:pre-wrap; word-break:break-word;
+  background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius);
+  padding:14px 16px; font:inherit; font-size:14px; line-height:1.75; color:var(--text);
+  box-shadow:var(--shadow); scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+#padText::-webkit-scrollbar{display:none; width:0}
+#padText:focus{border-color:var(--accent)}
+#padText:empty::before{content:attr(data-ph); color:var(--muted); pointer-events:none}
+#padText b, #padText strong{font-weight:800}
+#padText.paper{
+  background-color:color-mix(in srgb, #f59e0b 5%, var(--card));
+  background-image:repeating-linear-gradient(
+    transparent, transparent calc(1.75em - 1px),
+    color-mix(in srgb, var(--line) 85%, transparent) calc(1.75em - 1px),
+    color-mix(in srgb, var(--line) 85%, transparent) 1.75em);
+  background-attachment:local; background-origin:content-box;
+}
+#padText div{min-height:1.75em}
+.padBtn.icon{padding:0 9px; font-size:12.5px}
+.padBtn.bold{font-weight:900; width:34px; justify-content:center; padding:0}
+.padSep{width:1px; height:18px; background:var(--line); margin:0 2px; flex:none}
+.padSnippet{
+  display:block; width:100%; text-align:left; cursor:pointer;
+  background:var(--chipbg); border:1px solid var(--line); border-radius:11px;
+  padding:10px 12px; font-size:12.5px; line-height:1.6; color:var(--muted);
+}
+.padSnippet b{color:var(--text)}
+.padSnippet:hover{border-color:var(--accent)}
 /* ---------- 빠른 추가 버튼 ---------- */
 .quickadd{
   display:flex; align-items:center; justify-content:center; gap:6px; width:100%; min-height:40px;
@@ -367,6 +410,7 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
       <div id="applayout">
         <nav id="tabsV" class="tabsv noscroll hidden"></nav>
         <div id="content" class="noscroll">
+      <div id="padHost" class="padWrap hidden"></div>
       <div id="crumbs" class="crumbs hidden"></div>
       <button id="quickAdd" class="quickadd hidden">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -490,6 +534,8 @@ const DEFAULT_LAYOUT = "v";     // 기본 그룹 탭: 'v' 세로 | 'h' 가로(�
 const V_ACCORDION = true;      // 세로 탭 아코디언 모드(한 갈래만 펼침)
 const PREVIEW_DATA = null;      // 미리보기 샘플 데이터(설정 시 저장 없는 미리보기로 시작)
 const PREVIEW_LABEL = "";
+const MEMO_STYLE = "tools";     // 메모 스타일: 'plain' 심플 | 'tools' 도구줄 | 'paper' 줄노트
+const PREVIEW_MEMO = null;
 
 /* ---------- 작은 유틸 ---------- */
 const $ = s => document.querySelector(s);
@@ -552,6 +598,10 @@ $("#laySeg").addEventListener("click", e=>{
 const state = {
   mode: null,          // 'demo' | 'live'
   data: { groups: [] },
+  memoText: "",
+  memoHtml: "",
+  memoTs: 0,
+  memoPending: false,
   user: null,
   editMode: false,
   query: "",
@@ -663,7 +713,7 @@ function setStatus(){
   s.classList.remove("pending","off","demo");
   if(state.mode === "demo"){ s.classList.add("demo"); t.textContent = "체험 모드"; return; }
   if(!state.online){ s.classList.add("off"); t.textContent = "오프라인"; return; }
-  if(state.pending){ s.classList.add("pending"); t.textContent = "저장 중…"; return; }
+  if(state.pending || state.memoPending){ s.classList.add("pending"); t.textContent = "저장 중…"; return; }
   t.textContent = "동기화됨";
 }
 window.addEventListener("online", ()=>{ state.online = true; setStatus(); });
@@ -746,6 +796,7 @@ function groupEl(g, visLinks, arrows, hideHead, label){
 function resolveTab(){
   const act = state.activeTab;
   if(act === "all") return "all";
+  if(act === "__memo") return act;
   if(act && findG(act)) return act;
   const tops = state.data.groups;
   return tops.length ? tops[0].id : "all";
@@ -798,6 +849,14 @@ function renderTabs(act, q){
       v.appendChild(b);
     };
     mkRow("all","전체",null,null,1,false);
+    {
+      const mb = el("button","tabv memoTab");
+      const mc = el("span","caret leaf"); mc.innerHTML = CARET_SVG; mb.appendChild(mc);
+      mb.appendChild(el("span","name","📝 메모"));
+      tabStyle(mb, null, act === "__memo");
+      mb.addEventListener("click", ()=>selectTab("__memo"));
+      v.appendChild(mb);
+    }
     const visit = (arr, d)=>arr.forEach(g=>{
       mkRow(g.id, g.name, g.color, subCount(g), d, g.children.length > 0);
       if(g.children.length && openSet.has(g.id)) visit(g.children, d+1);
@@ -821,6 +880,7 @@ function renderTabs(act, q){
       h.appendChild(b);
     };
     mk("all","전체",null,null, act === "all");
+    mk("__memo","📝 메모",null,null, act === "__memo");
     groups.forEach(g=>mk(g.id, g.name, g.color, subCount(g), g.id === activeRoot));
     if(state.editMode){
       const b = el("button","tab","＋ 그룹");
@@ -884,6 +944,16 @@ function render(){
   let shown = 0;
   const single = !q && act !== "all" ? findG(act) : null;
 
+  /* 메모(스크래치패드) 화면 */
+  const memoActive = !q && act === "__memo";
+  $("#content").classList.toggle("memoMode", memoActive);
+  $("#padHost").classList.toggle("hidden", !memoActive);
+  if(memoActive){
+    buildPadHost();
+    if(document.activeElement !== padEl && padEl.innerHTML !== state.memoHtml) padEl.innerHTML = state.memoHtml;
+    updatePadMeta();
+  }
+
   /* 경로 · 빠른 추가 · 하위 그룹 칩 (그룹 화면에서만) */
   renderCrumbs(single);
   renderSubchips(single);
@@ -892,6 +962,23 @@ function render(){
   if(single) $("#quickAddLabel").textContent = `'${single.g.name}'에 북마크 추가`;
 
   if(q){
+    /* 메모 내용 검색 */
+    const qi = state.memoText.toLowerCase().indexOf(q);
+    if(qi >= 0){
+      shown++;
+      const sec = el("section","gsec");
+      const head = el("div","ghead");
+      const dot = el("span","gdot"); dot.style.background = "var(--accent)";
+      head.appendChild(dot);
+      head.appendChild(el("span","gname","📝 메모"));
+      sec.appendChild(head);
+      const btn = el("button","padSnippet");
+      const s0 = Math.max(0, qi - 40), s1 = Math.min(state.memoText.length, qi + q.length + 70);
+      btn.textContent = (s0 > 0 ? "… " : "") + state.memoText.slice(s0, s1).replace(/\s+/g," ") + (s1 < state.memoText.length ? " …" : "");
+      btn.addEventListener("click", ()=>{ $("#q").value = ""; state.query = ""; selectTab("__memo"); });
+      sec.appendChild(btn);
+      box.appendChild(sec);
+    }
     flat.forEach(f=>{
       const links = f.g.links;
       const gmatch = (f.g.name||"").toLowerCase().includes(q);
@@ -903,6 +990,8 @@ function render(){
       shown++;
       box.appendChild(groupEl(f.g, vis, "ud", false, f.path.join(" › ")));
     });
+  }else if(act === "__memo"){
+    shown = 1;   /* 메모 화면: 그룹 목록은 렌더링하지 않음(패드가 표시됨) */
   }else if(single){
     shown++;
     box.appendChild(groupEl(single.g, single.g.links, state.layout === "h" ? "lr" : "ud", !state.editMode));
@@ -1106,6 +1195,180 @@ $("#lUrl").addEventListener("blur", ()=>{
   if(u && !$("#lTitle").value.trim()) $("#lTitle").value = hostOf(u);
 });
 
+/* ---------- 메모 (스크래치패드 · 단일 · 굵게 서식 지원) ---------- */
+const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg";
+let memoTimer = null, padBuilt = false;
+let padFs = parseInt(store.get(PAD_FS_KEY) || "14", 10);
+if(!(padFs >= 11 && padFs <= 20)) padFs = 14;
+let padBg = store.get(PAD_BG_KEY) === "white" ? "white" : "paper";
+const padEl = document.createElement("div");
+padEl.id = "padText";
+padEl.contentEditable = "true";
+padEl.spellcheck = false;
+padEl.setAttribute("data-ph","여기에 자유롭게 적어 두세요. 입력을 멈추면 자동 저장됩니다. 텍스트를 선택하고 Ctrl+B(또는 B 버튼)를 누르면 굵게 강조돼요.");
+function applyPadPrefs(){
+  padEl.style.fontSize = padFs + "px";
+  padEl.classList.toggle("paper", padBg === "paper");
+  const bgLab = $("#padBgLab"); if(bgLab) bgLab.textContent = padBg === "paper" ? "줄노트" : "화이트";
+}
+/* 저장용 HTML 정제: 굵게(b)·줄바꿈(br)·문단(div)만 남기고 모두 제거 */
+function sanitizePad(html){
+  const tmp = document.createElement("div");
+  tmp.innerHTML = String(html || "").slice(0, 800000);
+  const walk = node=>{
+    [...node.childNodes].forEach(ch=>{
+      if(ch.nodeType === 3) return;                       // 텍스트
+      if(ch.nodeType !== 1){ ch.remove(); return; }
+      const tag = ch.tagName;
+      if(tag === "BR"){
+        const br = document.createElement("br"); ch.replaceWith(br); return;
+      }
+      walk(ch);
+      if(tag === "DIV" || tag === "P"){
+        const d = document.createElement("div");
+        while(ch.firstChild) d.appendChild(ch.firstChild);
+        ch.replaceWith(d); return;
+      }
+      const fw = ch.style ? String(ch.style.fontWeight || "") : "";
+      const boldish = tag === "B" || tag === "STRONG" || fw === "bold" || parseInt(fw) >= 600;
+      if(boldish){
+        const b = document.createElement("b");
+        while(ch.firstChild) b.appendChild(ch.firstChild);
+        ch.replaceWith(b); return;
+      }
+      ch.replaceWith(...ch.childNodes);                   // 그 외 태그는 벗겨냄
+    });
+  };
+  walk(tmp);
+  return tmp.innerHTML;
+}
+function textToHtml(t){ const d = document.createElement("div"); d.innerText = String(t||""); return d.innerHTML; }
+function htmlToText(h){ const d = document.createElement("div"); d.innerHTML = String(h||""); return d.innerText.replace(/ /g," "); }
+function syncFromPad(){
+  state.memoHtml = padEl.innerHTML;
+  state.memoText = htmlToText(state.memoHtml);
+  state.memoTs = Date.now();
+  updatePadMeta();
+  scheduleMemoSave();
+}
+padEl.addEventListener("input", syncFromPad);
+/* 붙여넣기는 항상 순수 텍스트로 (외부 서식 오염 방지) */
+padEl.addEventListener("paste", e=>{
+  e.preventDefault();
+  const t = (e.clipboardData || window.clipboardData).getData("text/plain");
+  if(t) document.execCommand("insertText", false, t);
+});
+/* Ctrl/Cmd+B = 굵게, 기울임·밑줄은 차단해 서식을 단순하게 유지 */
+padEl.addEventListener("keydown", e=>{
+  if(!(e.ctrlKey || e.metaKey)) return;
+  const k = e.key.toLowerCase();
+  if(k === "b"){ e.preventDefault(); document.execCommand("bold"); syncFromPad(); }
+  else if(k === "i" || k === "u"){ e.preventDefault(); }
+});
+function fmtTs(t){
+  if(!t) return "";
+  const d = new Date(t), z = x=>String(x).padStart(2,"0");
+  return `${String(d.getFullYear()).slice(2)}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+}
+function updatePadMeta(){
+  const m = $("#padMeta");
+  if(!m) return;
+  const n = state.memoText.length;
+  m.textContent = n.toLocaleString() + "자" + (state.memoTs ? " · 저장 " + fmtTs(state.memoTs) : "");
+}
+function scheduleMemoSave(){
+  state.memoPending = true; setStatus();
+  clearTimeout(memoTimer);
+  memoTimer = setTimeout(flushMemo, 700);
+}
+function flushMemo(){
+  clearTimeout(memoTimer); memoTimer = null;
+  if(state.mode === "live" && state.fb && state.fb.saveMemo){
+    state.fb.saveMemo(state.memoText, sanitizePad(state.memoHtml), state.memoTs);
+  }else{
+    state.memoPending = false; setStatus();
+  }
+}
+window.addEventListener("pagehide", flushMemo);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") flushMemo(); });
+function buildPadHost(){
+  if(padBuilt) return;
+  padBuilt = true;
+  const host = $("#padHost");
+  const bar = el("div","padBar");
+  const mkBtn = (cls, html, title, fn, keepSel)=>{
+    const b = el("button","padBtn" + (cls ? " " + cls : ""));
+    b.innerHTML = html;
+    if(title) b.title = title;
+    if(keepSel) b.addEventListener("pointerdown", e=>e.preventDefault());  // 선택 영역 유지
+    b.addEventListener("click", fn);
+    bar.appendChild(b);
+    return b;
+  };
+  /* 굵게 */
+  mkBtn("bold","B","선택한 텍스트 굵게 (Ctrl+B)", ()=>{
+    padEl.focus(); document.execCommand("bold"); syncFromPad();
+  }, true);
+  /* 글자 크기 */
+  mkBtn("icon","A−","글자 작게", ()=>{
+    if(padFs > 11){ padFs--; store.set(PAD_FS_KEY, String(padFs)); applyPadPrefs(); toast("글자 크기 " + padFs + "px"); }
+  }, true);
+  mkBtn("icon","A＋","글자 크게", ()=>{
+    if(padFs < 20){ padFs++; store.set(PAD_FS_KEY, String(padFs)); applyPadPrefs(); toast("글자 크기 " + padFs + "px"); }
+  }, true);
+  bar.appendChild(el("span","padSep"));
+  /* 배경 전환 (줄노트 ↔ 화이트) */
+  mkBtn("icon",'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg> <span id="padBgLab">줄노트</span>',"메모 배경 바꾸기", ()=>{
+    padBg = padBg === "paper" ? "white" : "paper";
+    store.set(PAD_BG_KEY, padBg); applyPadPrefs();
+  }, true);
+  /* 시간 도장 */
+  mkBtn("icon","⏱","현재 날짜·시각 끼워넣기", ()=>{
+    padEl.focus();
+    const d = new Date(), z = n=>String(n).padStart(2,"0");
+    const wd = "일월화수목금토"[d.getDay()];
+    document.execCommand("insertText", false, `── ${d.getMonth()+1}/${d.getDate()}(${wd}) ${z(d.getHours())}:${z(d.getMinutes())} ──\n`);
+    syncFromPad();
+  }, true);
+  /* 실행 취소 */
+  mkBtn("icon","↩","실행 취소 (Ctrl+Z)", ()=>{
+    padEl.focus(); document.execCommand("undo"); syncFromPad();
+  }, true);
+  bar.appendChild(el("span","padSep"));
+  /* 전체 복사 (굵게 서식 포함) */
+  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> 전체 복사',"", async ()=>{
+    if(!state.memoText.trim()){ toast("복사할 내용이 없어요"); return; }
+    try{
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([padEl.innerHTML], {type:"text/html"}),
+        "text/plain": new Blob([state.memoText], {type:"text/plain"})
+      })]);
+      toast("전체 내용을 복사했어요 (굵게 서식 포함)");
+    }catch(e){
+      try{ await navigator.clipboard.writeText(state.memoText); toast("전체 내용을 복사했어요"); }
+      catch(e2){
+        const r = document.createRange(); r.selectNodeContents(padEl);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        try{ document.execCommand("copy"); toast("전체 내용을 복사했어요"); }
+        catch(e3){ toast("복사에 실패했어요 — 직접 선택해서 복사해 주세요"); }
+        s.removeAllRanges();
+      }
+    }
+  });
+  /* 비우기 */
+  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> 비우기',"", ()=>{
+    if(!state.memoText.trim()){ padEl.innerHTML = ""; return; }
+    if(!confirm("메모 전체를 비울까요?\n(되돌릴 수 없어요 — 필요하면 먼저 '전체 복사'나 백업을 해두세요)")) return;
+    padEl.innerHTML = ""; state.memoHtml = ""; state.memoText = ""; state.memoTs = Date.now();
+    updatePadMeta(); scheduleMemoSave(); toast("메모를 비웠어요");
+  });
+  const meta = el("span","padMeta"); meta.id = "padMeta";
+  bar.appendChild(meta);
+  host.appendChild(bar);
+  host.appendChild(padEl);
+  applyPadPrefs();
+}
+
 /* ---------- 편집 토글 · 검색 ---------- */
 $("#editToggle").addEventListener("click", ()=>{ state.editMode = !state.editMode; render(); });
 $("#q").addEventListener("input", e=>{ state.query = e.target.value; render(); });
@@ -1115,7 +1378,8 @@ $("#qClear").addEventListener("click", ()=>{ $("#q").value = ""; state.query = "
 $("#menuBtn").addEventListener("click", ()=>$("#dlgMenu").showModal());
 $("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());
 $("#miExport").addEventListener("click", ()=>{
-  const blob = new Blob([JSON.stringify(state.data, null, 2)], {type:"application/json"});
+  const payload = { groups: state.data.groups, memo: { text: state.memoText, html: sanitizePad(state.memoHtml), updatedAt: state.memoTs } };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   const d = new Date(), z = n=>String(n).padStart(2,"0");
   a.href = URL.createObjectURL(blob);
@@ -1156,8 +1420,20 @@ $("#importFile").addEventListener("change", async e=>{
     const clean = cleanGroups(groups, 1);
     const cntL = arr=>arr.reduce((a,g)=>a+g.links.length+cntL(g.children),0);
     const cntG = arr=>arr.reduce((a,g)=>a+1+cntG(g.children),0);
-    if(!confirm(`백업 파일의 그룹 ${cntG(clean)}개 · 북마크 ${cntL(clean)}개로 현재 목록을 교체할까요?`)) return;
+    const hasMemo = !Array.isArray(raw) && raw.memo && typeof raw.memo.text === "string";
+    let msg = `백업 파일의 그룹 ${cntG(clean)}개 · 북마크 ${cntL(clean)}개`;
+    if(hasMemo) msg += ` · 메모(${raw.memo.text.length.toLocaleString()}자)`;
+    msg += `로 현재 내용을 교체할까요?`;
+    if(!confirm(msg)) return;
     state.data = { groups: clean };
+    if(hasMemo){
+      state.memoHtml = typeof raw.memo.html === "string" && raw.memo.html
+        ? sanitizePad(raw.memo.html) : textToHtml(raw.memo.text.slice(0, 500000));
+      state.memoText = htmlToText(state.memoHtml);
+      state.memoTs = Number(raw.memo.updatedAt) || Date.now();
+      if(padBuilt) padEl.innerHTML = state.memoHtml;
+      flushMemo();
+    }
     persist(); toast("백업을 불러왔어요");
   }catch(err){ toast("올바른 백업 파일이 아니에요"); }
 });
@@ -1248,7 +1524,8 @@ async function startLive(cfg){
     });
   }catch(e){ db = mod.getFirestore(app); }
   const docRef = mod.doc(db, "bookmarks", "main");
-  let unsub = null;
+  const memoRef = mod.doc(db, "bookmarks", "notes");
+  let unsub = null, unsubMemo = null;
 
   state.fb = {
     save(data){
@@ -1261,7 +1538,18 @@ async function startLive(cfg){
           else toast("저장 중 문제가 발생했어요");
         });
     },
-    async logout(){ if(unsub){ unsub(); unsub = null; } await mod.signOut(auth); }
+    saveMemo(text, html, ts){
+      mod.setDoc(memoRef, { text: String(text||""), html: String(html||""), updatedAt: ts || Date.now() })
+        .catch(err=>{
+          state.memoPending = false; setStatus();
+          toast("메모 저장 중 문제가 발생했어요");
+        });
+    },
+    async logout(){
+      if(unsub){ unsub(); unsub = null; }
+      if(unsubMemo){ unsubMemo(); unsubMemo = null; }
+      await mod.signOut(auth);
+    }
   };
 
   const provider = new mod.GoogleAuthProvider();
@@ -1296,14 +1584,34 @@ async function startLive(cfg){
   mod.onAuthStateChanged(auth, user=>{
     state.user = user;
     if(unsub){ unsub(); unsub = null; }
+    if(unsubMemo){ unsubMemo(); unsubMemo = null; }
     if(!user){
       state.data = { groups: [] };
+      state.memoText = ""; state.memoTs = 0;
       showScreen("login"); setBanner(null);
       $("#loginHint").textContent = "";
       return;
     }
     showScreen("app"); setBanner(null);
     state.mode = "live"; refreshMenu(); render();
+    unsubMemo = mod.onSnapshot(memoRef, { includeMetadataChanges: true }, snap=>{
+      const d = snap.exists() ? snap.data() : {};
+      const txt = typeof d.text === "string" ? d.text : "";
+      const html = typeof d.html === "string" && d.html ? sanitizePad(d.html) : textToHtml(txt);
+      /* 타이핑 중(포커스 상태)에는 로컬 내용을 보호 */
+      if(document.activeElement !== padEl){
+        state.memoHtml = html;
+        state.memoText = txt || htmlToText(html);
+        state.memoTs = Number(d.updatedAt) || 0;
+        if(padBuilt && padEl.innerHTML !== html) padEl.innerHTML = html;
+        updatePadMeta();
+      }
+      state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer;
+      setStatus();
+    }, err=>{
+      if(!String(err && err.code).includes("permission-denied"))
+        toast("메모를 불러오지 못했어요");
+    });
     unsub = mod.onSnapshot(docRef, { includeMetadataChanges: true }, snap=>{
       state.data = normData(snap.exists() ? snap.data() : { groups: [] });
       state.pending = snap.metadata.hasPendingWrites;
@@ -1330,6 +1638,11 @@ async function startLive(cfg){
   if(PREVIEW_DATA){
     state.mode = "demo";
     state.data = normData(PREVIEW_DATA);
+    if(typeof PREVIEW_MEMO === "string"){
+      state.memoHtml = sanitizePad(PREVIEW_MEMO);
+      state.memoText = htmlToText(state.memoHtml);
+      state.memoTs = Date.now();
+    }
     setBanner(PREVIEW_LABEL || "미리보기 — 변경 내용이 저장되지 않아요");
     refreshMenu(); showScreen("app"); render();
     return;
