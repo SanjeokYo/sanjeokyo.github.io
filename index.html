@@ -162,6 +162,8 @@ header{
 #padText:focus{border-color:var(--accent)}
 #padText:empty::before{content:attr(data-ph); color:var(--muted); pointer-events:none}
 #padText b, #padText strong{font-weight:800}
+#padText s, #padText strike, #padText del{text-decoration:line-through; color:var(--muted)}
+.padBtn.strike{width:34px; justify-content:center; padding:0; font-weight:800; text-decoration:line-through}
 #padText.paper{
   background-color:color-mix(in srgb, #f59e0b 5%, var(--card));
   background-image:repeating-linear-gradient(
@@ -174,6 +176,42 @@ header{
 .padBtn.icon{padding:0 9px; font-size:12.5px}
 .padBtn.bold{font-weight:900; width:34px; justify-content:center; padding:0}
 .padSep{width:1px; height:18px; background:var(--line); margin:0 2px; flex:none}
+/* ---------- 메모 멀티탭 ---------- */
+.padTabs{flex:none; display:flex; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; align-items:flex-end}
+.padTabs::-webkit-scrollbar{display:none}
+.padTab{
+  flex:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+  font-size:12px; font-weight:800; letter-spacing:-.2px; color:var(--muted);
+  border:1px solid var(--line); background:color-mix(in srgb, var(--card) 55%, var(--bg));
+  max-width:170px;
+}
+.padTab .nm{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.padTab.active{color:var(--text); background:var(--card)}
+.padTab .x{
+  width:16px; height:16px; border-radius:50%; display:none; place-items:center; flex:none; color:var(--muted);
+}
+.padTab.active .x{display:grid}
+.padTab .x:hover{background:color-mix(in srgb, var(--danger) 14%, transparent); color:var(--danger)}
+.padTab .x svg{width:9px; height:9px}
+.padTab.add{color:var(--accent); border-style:dashed; font-weight:900}
+/* 파일탭형: 패드 위에 붙는 브라우저 탭 */
+.padstyle-file .padTabs{padding:2px 6px 0; margin-bottom:-1px; position:relative; z-index:1}
+.padstyle-file .padTab{border-radius:10px 10px 0 0; padding:7px 12px 8px; border-bottom:none}
+.padstyle-file .padTab.active{box-shadow:0 2px 0 -1px var(--card)}
+.padstyle-file #padText{border-top-left-radius:6px}
+/* 알약형: 그룹 탭과 같은 칩 */
+.padstyle-pill .padTabs{padding:0 0 8px; align-items:center}
+.padstyle-pill .padTab{border-radius:999px; padding:6px 12px}
+.padstyle-pill .padTab.active{
+  color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 11%, transparent);
+  border-color:color-mix(in srgb, var(--accent) 40%, transparent);
+}
+/* 시트탭형: 패드 아래에 붙는 엑셀 시트 탭 */
+.padstyle-sheet .padTabs{padding:0 6px 2px; margin-top:-1px; align-items:flex-start}
+.padstyle-sheet .padTab{border-radius:0 0 10px 10px; padding:7px 12px 8px; border-top:none}
+.padstyle-sheet .padTab.active{box-shadow:0 -2px 0 -1px var(--card)}
+.padstyle-sheet #padText{border-bottom-left-radius:6px}
 .padSnippet{
   display:block; width:100%; text-align:left; cursor:pointer;
   background:var(--chipbg); border:1px solid var(--line); border-radius:11px;
@@ -598,9 +636,8 @@ $("#laySeg").addEventListener("click", e=>{
 const state = {
   mode: null,          // 'demo' | 'live'
   data: { groups: [] },
-  memoText: "",
-  memoHtml: "",
-  memoTs: 0,
+  pads: [],            // [{id, name, text, html, updatedAt}]
+  padActive: null,
   memoPending: false,
   user: null,
   editMode: false,
@@ -950,7 +987,11 @@ function render(){
   $("#padHost").classList.toggle("hidden", !memoActive);
   if(memoActive){
     buildPadHost();
-    if(document.activeElement !== padEl && padEl.innerHTML !== state.memoHtml) padEl.innerHTML = state.memoHtml;
+    if(document.activeElement !== padEl){
+      const p = curPad();
+      if(padEl.innerHTML !== p.html) padEl.innerHTML = p.html;
+    }
+    renderPadTabs();
     updatePadMeta();
   }
 
@@ -962,23 +1003,29 @@ function render(){
   if(single) $("#quickAddLabel").textContent = `'${single.g.name}'에 북마크 추가`;
 
   if(q){
-    /* 메모 내용 검색 */
-    const qi = state.memoText.toLowerCase().indexOf(q);
-    if(qi >= 0){
+    /* 메모(모든 탭) 내용 검색 */
+    state.pads.forEach(p=>{
+      const qi = p.text.toLowerCase().indexOf(q);
+      if(qi < 0) return;
       shown++;
       const sec = el("section","gsec");
       const head = el("div","ghead");
       const dot = el("span","gdot"); dot.style.background = "var(--accent)";
       head.appendChild(dot);
-      head.appendChild(el("span","gname","📝 메모"));
+      head.appendChild(el("span","gname","📝 메모 · " + p.name));
       sec.appendChild(head);
       const btn = el("button","padSnippet");
-      const s0 = Math.max(0, qi - 40), s1 = Math.min(state.memoText.length, qi + q.length + 70);
-      btn.textContent = (s0 > 0 ? "… " : "") + state.memoText.slice(s0, s1).replace(/\s+/g," ") + (s1 < state.memoText.length ? " …" : "");
-      btn.addEventListener("click", ()=>{ $("#q").value = ""; state.query = ""; selectTab("__memo"); });
+      const s0 = Math.max(0, qi - 40), s1 = Math.min(p.text.length, qi + q.length + 70);
+      btn.textContent = (s0 > 0 ? "… " : "") + p.text.slice(s0, s1).replace(/\s+/g," ") + (s1 < p.text.length ? " …" : "");
+      btn.addEventListener("click", ()=>{
+        $("#q").value = ""; state.query = "";
+        state.padActive = p.id; store.set(PAD_TAB_KEY, p.id);
+        if(padBuilt) loadPadIntoEl();
+        selectTab("__memo");
+      });
       sec.appendChild(btn);
       box.appendChild(sec);
-    }
+    });
     flat.forEach(f=>{
       const links = f.g.links;
       const gmatch = (f.g.name||"").toLowerCase().includes(q);
@@ -1195,21 +1242,122 @@ $("#lUrl").addEventListener("blur", ()=>{
   if(u && !$("#lTitle").value.trim()) $("#lTitle").value = hostOf(u);
 });
 
-/* ---------- 메모 (스크래치패드 · 단일 · 굵게 서식 지원) ---------- */
-const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg";
-let memoTimer = null, padBuilt = false;
+/* ---------- 메모 (멀티탭 스크래치패드 · 굵게 서식 지원) ---------- */
+const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg", PAD_TAB_KEY = "bmh_padtab";
+const PAD_STYLE = "file";        // 메모 탭 모양: 'file' 파일탭형 | 'pill' 알약형 | 'sheet' 시트탭형
+const MAX_PADS = 12;
+let memoTimer = null, padBuilt = false, padEl = null;
 let padFs = parseInt(store.get(PAD_FS_KEY) || "14", 10);
 if(!(padFs >= 11 && padFs <= 20)) padFs = 14;
 let padBg = store.get(PAD_BG_KEY) === "white" ? "white" : "paper";
-const padEl = document.createElement("div");
-padEl.id = "padText";
-padEl.contentEditable = "true";
-padEl.spellcheck = false;
-padEl.setAttribute("data-ph","여기에 자유롭게 적어 두세요. 입력을 멈추면 자동 저장됩니다. 텍스트를 선택하고 Ctrl+B(또는 B 버튼)를 누르면 굵게 강조돼요.");
+function makePadEl(){
+  const d = document.createElement("div");
+  d.id = "padText";
+  d.contentEditable = "true";
+  d.spellcheck = false;
+  d.setAttribute("data-ph","여기에 자유롭게 적어 두세요. 입력을 멈추면 자동 저장됩니다. 텍스트를 선택하고 Ctrl+B(또는 B 버튼)를 누르면 굵게 강조돼요.");
+  d.addEventListener("input", syncFromPad);
+  d.addEventListener("paste", padPasteHandler);
+  d.addEventListener("keydown", padKeyHandler);
+  return d;
+}
 function applyPadPrefs(){
-  padEl.style.fontSize = padFs + "px";
-  padEl.classList.toggle("paper", padBg === "paper");
+  if(padEl){
+    padEl.style.fontSize = padFs + "px";
+    padEl.classList.toggle("paper", padBg === "paper");
+  }
   const bgLab = $("#padBgLab"); if(bgLab) bgLab.textContent = padBg === "paper" ? "줄노트" : "화이트";
+}
+/* ---- 패드 목록 관리 ---- */
+function normalizePads(d){
+  let pads = [];
+  if(d && Array.isArray(d.pads)){
+    pads = d.pads.map(p=>{
+      if(!p || typeof p !== "object") return null;
+      const html = (typeof p.html === "string" && p.html) ? sanitizePad(p.html) : textToHtml(p.text || "");
+      return { id: typeof p.id === "string" ? p.id : "p_" + uid(),
+               name: String(p.name || "메모").slice(0, 20),
+               html, text: typeof p.text === "string" ? p.text : htmlToText(html),
+               updatedAt: Number(p.updatedAt) || 0 };
+    }).filter(Boolean);
+  }else if(d && ((typeof d.html === "string" && d.html) || (typeof d.text === "string" && d.text))){
+    /* 예전 단일 메모 형식 → '메모 1' 탭으로 자동 이전 */
+    const html = d.html ? sanitizePad(d.html) : textToHtml(d.text || "");
+    pads = [{ id: "p_" + uid(), name: "메모 1", html, text: d.text || htmlToText(html), updatedAt: Number(d.updatedAt) || 0 }];
+  }
+  return pads;
+}
+function ensurePads(){
+  if(!state.pads.length) state.pads.push({ id: "p_" + uid(), name: "메모 1", html: "", text: "", updatedAt: 0 });
+}
+function curPad(){
+  ensurePads();
+  let p = state.pads.find(x=>x.id === state.padActive);
+  if(!p){ p = state.pads[0]; state.padActive = p.id; }
+  return p;
+}
+function padsPayload(){
+  return state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html), updatedAt: p.updatedAt }));
+}
+function loadPadIntoEl(){
+  /* 탭마다 새 편집 요소로 교체 → 실행취소 이력이 탭 사이에 섞이지 않음 */
+  const p = curPad();
+  const fresh = makePadEl();
+  fresh.innerHTML = p.html;
+  if(padEl && padEl.parentNode) padEl.replaceWith(fresh);
+  padEl = fresh;
+  applyPadPrefs();
+}
+function switchPad(id){
+  if(id === state.padActive) return;
+  flushMemo();
+  state.padActive = id; store.set(PAD_TAB_KEY, id);
+  loadPadIntoEl();
+  renderPadTabs(); updatePadMeta();
+  padEl.scrollTop = 0;
+}
+function addPad(){
+  if(state.pads.length >= MAX_PADS){ toast("메모 탭은 최대 " + MAX_PADS + "개까지예요"); return; }
+  const names = new Set(state.pads.map(p=>p.name));
+  let n = 1; while(names.has("메모 " + n)) n++;
+  const p = { id: "p_" + uid(), name: "메모 " + n, html: "", text: "", updatedAt: Date.now() };
+  state.pads.push(p);
+  state.padActive = p.id; store.set(PAD_TAB_KEY, p.id);
+  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave();
+  setTimeout(()=>padEl.focus(), 60);
+}
+function delPad(id){
+  const p = state.pads.find(x=>x.id === id); if(!p) return;
+  const n = p.text.trim().length;
+  if(!confirm(`'${p.name}' 메모 탭을 삭제할까요?` + (n ? `\n(내용 ${n.toLocaleString()}자도 함께 삭제됩니다)` : ""))) return;
+  state.pads = state.pads.filter(x=>x.id !== id);
+  ensurePads();
+  if(state.padActive === id){ state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive); }
+  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(); toast("메모 탭을 삭제했어요");
+}
+function renamePad(){
+  const p = curPad();
+  const nm = prompt("메모 탭 이름", p.name);
+  if(nm === null) return;
+  p.name = (nm.trim() || p.name).slice(0, 20);
+  renderPadTabs(); scheduleMemoSave();
+}
+function renderPadTabs(){
+  const box = $("#padTabs"); if(!box) return;
+  box.textContent = "";
+  ensurePads();
+  state.pads.forEach(p=>{
+    const t = el("button","padTab" + (p.id === state.padActive ? " active" : ""));
+    t.appendChild(el("span","nm", p.name));
+    t.title = p.name + " — 더블클릭: 이름 바꾸기 · 삭제는 도구줄의 [− 탭 삭제]";
+    t.addEventListener("click", ()=>switchPad(p.id));
+    t.addEventListener("dblclick", ()=>{ if(p.id === state.padActive) renamePad(); });
+    box.appendChild(t);
+  });
+  const add = el("button","padTab add","＋");
+  add.title = "새 메모 탭 추가";
+  add.addEventListener("click", addPad);
+  box.appendChild(add);
 }
 /* 저장용 HTML 정제: 굵게(b)·줄바꿈(br)·문단(div)만 남기고 모두 제거 */
 function sanitizePad(html){
@@ -1230,11 +1378,16 @@ function sanitizePad(html){
         ch.replaceWith(d); return;
       }
       const fw = ch.style ? String(ch.style.fontWeight || "") : "";
+      const td = ch.style ? String(ch.style.textDecoration || ch.style.textDecorationLine || "") : "";
       const boldish = tag === "B" || tag === "STRONG" || fw === "bold" || parseInt(fw) >= 600;
-      if(boldish){
-        const b = document.createElement("b");
-        while(ch.firstChild) b.appendChild(ch.firstChild);
-        ch.replaceWith(b); return;
+      const strikeish = tag === "S" || tag === "STRIKE" || tag === "DEL" || td.includes("line-through");
+      if(boldish || strikeish){
+        const frag = document.createDocumentFragment();
+        while(ch.firstChild) frag.appendChild(ch.firstChild);
+        let node = frag;
+        if(boldish){ const b = document.createElement("b"); b.appendChild(node); node = b; }
+        if(strikeish){ const s = document.createElement("s"); s.appendChild(node); node = s; }
+        ch.replaceWith(node); return;
       }
       ch.replaceWith(...ch.childNodes);                   // 그 외 태그는 벗겨냄
     });
@@ -1245,26 +1398,27 @@ function sanitizePad(html){
 function textToHtml(t){ const d = document.createElement("div"); d.innerText = String(t||""); return d.innerHTML; }
 function htmlToText(h){ const d = document.createElement("div"); d.innerHTML = String(h||""); return d.innerText.replace(/ /g," "); }
 function syncFromPad(){
-  state.memoHtml = padEl.innerHTML;
-  state.memoText = htmlToText(state.memoHtml);
-  state.memoTs = Date.now();
+  const p = curPad();
+  p.html = padEl.innerHTML;
+  p.text = htmlToText(p.html);
+  p.updatedAt = Date.now();
   updatePadMeta();
   scheduleMemoSave();
 }
-padEl.addEventListener("input", syncFromPad);
 /* 붙여넣기는 항상 순수 텍스트로 (외부 서식 오염 방지) */
-padEl.addEventListener("paste", e=>{
+function padPasteHandler(e){
   e.preventDefault();
   const t = (e.clipboardData || window.clipboardData).getData("text/plain");
   if(t) document.execCommand("insertText", false, t);
-});
-/* Ctrl/Cmd+B = 굵게, 기울임·밑줄은 차단해 서식을 단순하게 유지 */
-padEl.addEventListener("keydown", e=>{
+}
+/* Ctrl/Cmd+B = 굵게, Ctrl/Cmd+Shift+S = 취소선, 기울임·밑줄은 차단 */
+function padKeyHandler(e){
   if(!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
   if(k === "b"){ e.preventDefault(); document.execCommand("bold"); syncFromPad(); }
+  else if(k === "s" && e.shiftKey){ e.preventDefault(); document.execCommand("strikeThrough"); syncFromPad(); }
   else if(k === "i" || k === "u"){ e.preventDefault(); }
-});
+}
 function fmtTs(t){
   if(!t) return "";
   const d = new Date(t), z = x=>String(x).padStart(2,"0");
@@ -1273,8 +1427,8 @@ function fmtTs(t){
 function updatePadMeta(){
   const m = $("#padMeta");
   if(!m) return;
-  const n = state.memoText.length;
-  m.textContent = n.toLocaleString() + "자" + (state.memoTs ? " · 저장 " + fmtTs(state.memoTs) : "");
+  const p = curPad();
+  m.textContent = p.text.length.toLocaleString() + "자" + (p.updatedAt ? " · 저장 " + fmtTs(p.updatedAt) : "");
 }
 function scheduleMemoSave(){
   state.memoPending = true; setStatus();
@@ -1284,7 +1438,7 @@ function scheduleMemoSave(){
 function flushMemo(){
   clearTimeout(memoTimer); memoTimer = null;
   if(state.mode === "live" && state.fb && state.fb.saveMemo){
-    state.fb.saveMemo(state.memoText, sanitizePad(state.memoHtml), state.memoTs);
+    state.fb.saveMemo(padsPayload());
   }else{
     state.memoPending = false; setStatus();
   }
@@ -1295,6 +1449,8 @@ function buildPadHost(){
   if(padBuilt) return;
   padBuilt = true;
   const host = $("#padHost");
+  host.classList.add("padstyle-" + PAD_STYLE);
+  const tabs = el("div","padTabs noscroll"); tabs.id = "padTabs";
   const bar = el("div","padBar");
   const mkBtn = (cls, html, title, fn, keepSel)=>{
     const b = el("button","padBtn" + (cls ? " " + cls : ""));
@@ -1305,9 +1461,12 @@ function buildPadHost(){
     bar.appendChild(b);
     return b;
   };
-  /* 굵게 */
+  /* 굵게 · 취소선 */
   mkBtn("bold","B","선택한 텍스트 굵게 (Ctrl+B)", ()=>{
     padEl.focus(); document.execCommand("bold"); syncFromPad();
+  }, true);
+  mkBtn("strike","S","선택한 텍스트 취소선 (Ctrl+Shift+S)", ()=>{
+    padEl.focus(); document.execCommand("strikeThrough"); syncFromPad();
   }, true);
   /* 글자 크기 */
   mkBtn("icon","A−","글자 작게", ()=>{
@@ -1334,18 +1493,21 @@ function buildPadHost(){
   mkBtn("icon","↩","실행 취소 (Ctrl+Z)", ()=>{
     padEl.focus(); document.execCommand("undo"); syncFromPad();
   }, true);
+  /* 탭 이름 바꾸기 · 탭 삭제 */
+  mkBtn("icon","✏ 이름","현재 메모 탭 이름 바꾸기 (탭 더블클릭도 가능)", renamePad);
+  mkBtn("icon","− 탭 삭제","현재 메모 탭 삭제 (확인창이 한 번 더 물어봐요)", ()=>delPad(state.padActive));
   bar.appendChild(el("span","padSep"));
   /* 전체 복사 (굵게 서식 포함) */
-  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> 전체 복사',"", async ()=>{
-    if(!state.memoText.trim()){ toast("복사할 내용이 없어요"); return; }
+  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> 전체 복사',"현재 메모 탭 전체 복사", async ()=>{
+    if(!curPad().text.trim()){ toast("복사할 내용이 없어요"); return; }
     try{
       await navigator.clipboard.write([new ClipboardItem({
         "text/html": new Blob([padEl.innerHTML], {type:"text/html"}),
-        "text/plain": new Blob([state.memoText], {type:"text/plain"})
+        "text/plain": new Blob([curPad().text], {type:"text/plain"})
       })]);
       toast("전체 내용을 복사했어요 (굵게 서식 포함)");
     }catch(e){
-      try{ await navigator.clipboard.writeText(state.memoText); toast("전체 내용을 복사했어요"); }
+      try{ await navigator.clipboard.writeText(curPad().text); toast("전체 내용을 복사했어요"); }
       catch(e2){
         const r = document.createRange(); r.selectNodeContents(padEl);
         const s = getSelection(); s.removeAllRanges(); s.addRange(r);
@@ -1356,16 +1518,24 @@ function buildPadHost(){
     }
   });
   /* 비우기 */
-  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> 비우기',"", ()=>{
-    if(!state.memoText.trim()){ padEl.innerHTML = ""; return; }
-    if(!confirm("메모 전체를 비울까요?\n(되돌릴 수 없어요 — 필요하면 먼저 '전체 복사'나 백업을 해두세요)")) return;
-    padEl.innerHTML = ""; state.memoHtml = ""; state.memoText = ""; state.memoTs = Date.now();
+  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> 비우기',"현재 메모 탭 비우기", ()=>{
+    const p = curPad();
+    if(!p.text.trim()){ padEl.innerHTML = ""; return; }
+    if(!confirm(`'${p.name}' 탭의 내용을 비울까요?\n(되돌릴 수 없어요 — 필요하면 먼저 '전체 복사'나 백업을 해두세요)`)) return;
+    padEl.innerHTML = ""; p.html = ""; p.text = ""; p.updatedAt = Date.now();
     updatePadMeta(); scheduleMemoSave(); toast("메모를 비웠어요");
   });
   const meta = el("span","padMeta"); meta.id = "padMeta";
   bar.appendChild(meta);
-  host.appendChild(bar);
-  host.appendChild(padEl);
+  const savedTab = store.get(PAD_TAB_KEY);
+  if(savedTab) state.padActive = savedTab;
+  loadPadIntoEl();
+  if(PAD_STYLE === "sheet"){
+    host.appendChild(bar); host.appendChild(padEl); host.appendChild(tabs);
+  }else{
+    host.appendChild(tabs); host.appendChild(bar); host.appendChild(padEl);
+  }
+  renderPadTabs();
   applyPadPrefs();
 }
 
@@ -1378,7 +1548,7 @@ $("#qClear").addEventListener("click", ()=>{ $("#q").value = ""; state.query = "
 $("#menuBtn").addEventListener("click", ()=>$("#dlgMenu").showModal());
 $("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());
 $("#miExport").addEventListener("click", ()=>{
-  const payload = { groups: state.data.groups, memo: { text: state.memoText, html: sanitizePad(state.memoHtml), updatedAt: state.memoTs } };
+  const payload = { groups: state.data.groups, memo: { pads: padsPayload() } };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   const d = new Date(), z = n=>String(n).padStart(2,"0");
@@ -1420,18 +1590,16 @@ $("#importFile").addEventListener("change", async e=>{
     const clean = cleanGroups(groups, 1);
     const cntL = arr=>arr.reduce((a,g)=>a+g.links.length+cntL(g.children),0);
     const cntG = arr=>arr.reduce((a,g)=>a+1+cntG(g.children),0);
-    const hasMemo = !Array.isArray(raw) && raw.memo && typeof raw.memo.text === "string";
+    const memoPads = !Array.isArray(raw) && raw.memo ? normalizePads(raw.memo) : [];
     let msg = `백업 파일의 그룹 ${cntG(clean)}개 · 북마크 ${cntL(clean)}개`;
-    if(hasMemo) msg += ` · 메모(${raw.memo.text.length.toLocaleString()}자)`;
+    if(memoPads.length) msg += ` · 메모 탭 ${memoPads.length}개`;
     msg += `로 현재 내용을 교체할까요?`;
     if(!confirm(msg)) return;
     state.data = { groups: clean };
-    if(hasMemo){
-      state.memoHtml = typeof raw.memo.html === "string" && raw.memo.html
-        ? sanitizePad(raw.memo.html) : textToHtml(raw.memo.text.slice(0, 500000));
-      state.memoText = htmlToText(state.memoHtml);
-      state.memoTs = Number(raw.memo.updatedAt) || Date.now();
-      if(padBuilt) padEl.innerHTML = state.memoHtml;
+    if(memoPads.length){
+      state.pads = memoPads;
+      state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive);
+      if(padBuilt){ loadPadIntoEl(); renderPadTabs(); updatePadMeta(); }
       flushMemo();
     }
     persist(); toast("백업을 불러왔어요");
@@ -1538,8 +1706,8 @@ async function startLive(cfg){
           else toast("저장 중 문제가 발생했어요");
         });
     },
-    saveMemo(text, html, ts){
-      mod.setDoc(memoRef, { text: String(text||""), html: String(html||""), updatedAt: ts || Date.now() })
+    saveMemo(pads){
+      mod.setDoc(memoRef, { pads, updatedAt: Date.now() })
         .catch(err=>{
           state.memoPending = false; setStatus();
           toast("메모 저장 중 문제가 발생했어요");
@@ -1587,7 +1755,7 @@ async function startLive(cfg){
     if(unsubMemo){ unsubMemo(); unsubMemo = null; }
     if(!user){
       state.data = { groups: [] };
-      state.memoText = ""; state.memoTs = 0;
+      state.pads = []; state.padActive = null;
       showScreen("login"); setBanner(null);
       $("#loginHint").textContent = "";
       return;
@@ -1596,15 +1764,22 @@ async function startLive(cfg){
     state.mode = "live"; refreshMenu(); render();
     unsubMemo = mod.onSnapshot(memoRef, { includeMetadataChanges: true }, snap=>{
       const d = snap.exists() ? snap.data() : {};
-      const txt = typeof d.text === "string" ? d.text : "";
-      const html = typeof d.html === "string" && d.html ? sanitizePad(d.html) : textToHtml(txt);
-      /* 타이핑 중(포커스 상태)에는 로컬 내용을 보호 */
-      if(document.activeElement !== padEl){
-        state.memoHtml = html;
-        state.memoText = txt || htmlToText(html);
-        state.memoTs = Number(d.updatedAt) || 0;
-        if(padBuilt && padEl.innerHTML !== html) padEl.innerHTML = html;
-        updatePadMeta();
+      const incoming = normalizePads(d);
+      /* 타이핑 중(포커스 상태)에는 현재 탭 내용을 보호 */
+      if(padBuilt && document.activeElement === padEl){
+        const local = curPad();
+        const i = incoming.findIndex(p=>p.id === local.id);
+        if(i >= 0) incoming[i] = local; else incoming.push(local);
+      }
+      state.pads = incoming;
+      ensurePads();
+      if(!state.pads.find(p=>p.id === state.padActive)) state.padActive = state.pads[0].id;
+      if(padBuilt){
+        if(document.activeElement !== padEl){
+          const p = curPad();
+          if(padEl.innerHTML !== p.html) padEl.innerHTML = p.html;
+        }
+        renderPadTabs(); updatePadMeta();
       }
       state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer;
       setStatus();
@@ -1638,10 +1813,9 @@ async function startLive(cfg){
   if(PREVIEW_DATA){
     state.mode = "demo";
     state.data = normData(PREVIEW_DATA);
-    if(typeof PREVIEW_MEMO === "string"){
-      state.memoHtml = sanitizePad(PREVIEW_MEMO);
-      state.memoText = htmlToText(state.memoHtml);
-      state.memoTs = Date.now();
+    if(PREVIEW_MEMO){
+      state.pads = normalizePads(Array.isArray(PREVIEW_MEMO) ? { pads: PREVIEW_MEMO } : PREVIEW_MEMO);
+      if(state.pads.length) state.padActive = state.pads[0].id;
     }
     setBanner(PREVIEW_LABEL || "미리보기 — 변경 내용이 저장되지 않아요");
     refreshMenu(); showScreen("app"); render();
