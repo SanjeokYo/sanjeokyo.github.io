@@ -750,6 +750,7 @@ function setStatus(){
   s.classList.remove("pending","off","demo");
   if(state.mode === "demo"){ s.classList.add("demo"); t.textContent = "체험 모드"; return; }
   if(!state.online){ s.classList.add("off"); t.textContent = "오프라인"; return; }
+  if(state.mode === "live" && !memoServerSynced){ s.classList.add("pending"); t.textContent = "동기화 확인 중…"; return; }
   if(state.pending || state.memoPending){ s.classList.add("pending"); t.textContent = "저장 중…"; return; }
   t.textContent = "동기화됨";
 }
@@ -1243,10 +1244,12 @@ $("#lUrl").addEventListener("blur", ()=>{
 });
 
 /* ---------- 메모 (멀티탭 스크래치패드 · 굵게 서식 지원) ---------- */
-const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg", PAD_TAB_KEY = "bmh_padtab";
+const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg", PAD_TAB_KEY = "bmh_padtab", PAD_DRAFT_KEY = "bmh_paddraft";
 const PAD_STYLE = "file";        // 메모 탭 모양: 'file' 파일탭형 | 'pill' 알약형 | 'sheet' 시트탭형
 const MAX_PADS = 12;
 let memoTimer = null, padBuilt = false, padEl = null;
+let memoDirty = false;           // 아직 서버에 저장 안 된 '실제 수정'이 있는가
+let memoServerSynced = false;    // 이 세션에서 서버(캐시 아님) 스냅샷을 받았는가
 let padFs = parseInt(store.get(PAD_FS_KEY) || "14", 10);
 if(!(padFs >= 11 && padFs <= 20)) padFs = 14;
 let padBg = store.get(PAD_BG_KEY) === "white" ? "white" : "paper";
@@ -1299,6 +1302,18 @@ function curPad(){
 function padsPayload(){
   return state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html), updatedAt: p.updatedAt }));
 }
+/* 패드별 병합: 같은 id는 updatedAt이 새로운 쪽, 한쪽에만 있으면 유지 (통째 덮어쓰기 금지) */
+function mergePads(server, local){
+  const sIds = new Set(server.map(p=>p.id));
+  const lMap = new Map(local.map(p=>[p.id, p]));
+  const out = [];
+  server.forEach(sp=>{
+    const lp = lMap.get(sp.id);
+    out.push(lp && (lp.updatedAt||0) >= (sp.updatedAt||0) ? lp : sp);
+  });
+  local.forEach(lp=>{ if(!sIds.has(lp.id)) out.push(lp); });
+  return out;
+}
 function loadPadIntoEl(){
   /* 탭마다 새 편집 요소로 교체 → 실행취소 이력이 탭 사이에 섞이지 않음 */
   const p = curPad();
@@ -1340,6 +1355,7 @@ function renamePad(){
   const nm = prompt("메모 탭 이름", p.name);
   if(nm === null) return;
   p.name = (nm.trim() || p.name).slice(0, 20);
+  p.updatedAt = Date.now();
   renderPadTabs(); scheduleMemoSave();
 }
 function renderPadTabs(){
@@ -1431,20 +1447,38 @@ function updatePadMeta(){
   m.textContent = p.text.length.toLocaleString() + "자" + (p.updatedAt ? " · 저장 " + fmtTs(p.updatedAt) : "");
 }
 function scheduleMemoSave(){
+  memoDirty = true;                      // 실제 수정이 있을 때만 이 함수가 불림
   state.memoPending = true; setStatus();
   clearTimeout(memoTimer);
   memoTimer = setTimeout(flushMemo, 700);
 }
 function flushMemo(){
   clearTimeout(memoTimer); memoTimer = null;
-  if(state.mode === "live" && state.fb && state.fb.saveMemo){
-    state.fb.saveMemo(padsPayload());
-  }else{
-    state.memoPending = false; setStatus();
+  if(!memoDirty){ state.memoPending = false; setStatus(); return; }   // 수정 없으면 절대 쓰지 않음
+  if(state.mode !== "live" || !state.fb || !state.fb.saveMemo){
+    memoDirty = false; state.memoPending = false; setStatus(); return; // 체험/미리보기
   }
+  if(!memoServerSynced){
+    /* 서버의 최신 상태를 아직 확인하지 못함(방금 켠 PC 등):
+       과거 캐시로 서버를 덮어쓰면 안 되므로 쓰기를 보류.
+       서버 스냅샷이 도착하면 병합 후 자동 저장됨. */
+    state.memoPending = true; setStatus(); return;
+  }
+  memoDirty = false;
+  state.fb.saveMemo(padsPayload());
+  store.del(PAD_DRAFT_KEY);
 }
-window.addEventListener("pagehide", flushMemo);
-document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") flushMemo(); });
+/* 화면을 떠날 때: 수정이 있을 때만 저장. 서버 미확인 상태면 서버 대신 이 기기에 초안으로 보관 */
+function memoOnLeave(){
+  if(!memoDirty) return;
+  if(state.mode === "live" && !memoServerSynced){
+    store.set(PAD_DRAFT_KEY, JSON.stringify({ pads: padsPayload(), ts: Date.now() }));
+    return;
+  }
+  flushMemo();
+}
+window.addEventListener("pagehide", memoOnLeave);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") memoOnLeave(); });
 function buildPadHost(){
   if(padBuilt) return;
   padBuilt = true;
@@ -1539,6 +1573,18 @@ function buildPadHost(){
   applyPadPrefs();
 }
 
+/* 로컬 테스트 전용 훅 (localhost에서만 노출) */
+if(location.hostname === "localhost" || location.hostname === "127.0.0.1"){
+  window.__padTest = {
+    mergePads,
+    getPads: ()=>state.pads,
+    setPads: p=>{ state.pads = p; },
+    isDirty: ()=>memoDirty,
+    setDirty: v=>{ memoDirty = v; },
+    isSynced: ()=>memoServerSynced
+  };
+}
+
 /* ---------- 편집 토글 · 검색 ---------- */
 $("#editToggle").addEventListener("click", ()=>{ state.editMode = !state.editMode; render(); });
 $("#q").addEventListener("input", e=>{ state.query = e.target.value; render(); });
@@ -1600,6 +1646,7 @@ $("#importFile").addEventListener("change", async e=>{
       state.pads = memoPads;
       state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive);
       if(padBuilt){ loadPadIntoEl(); renderPadTabs(); updatePadMeta(); }
+      memoDirty = true;
       flushMemo();
     }
     persist(); toast("백업을 불러왔어요");
@@ -1756,22 +1803,40 @@ async function startLive(cfg){
     if(!user){
       state.data = { groups: [] };
       state.pads = []; state.padActive = null;
+      memoDirty = false; memoServerSynced = false;
       showScreen("login"); setBanner(null);
       $("#loginHint").textContent = "";
       return;
     }
     showScreen("app"); setBanner(null);
     state.mode = "live"; refreshMenu(); render();
+    /* 이 기기에 미동기 초안이 남아 있으면 복원(스냅샷 도착 시 병합·저장됨) */
+    try{
+      const draft = JSON.parse(store.get(PAD_DRAFT_KEY) || "null");
+      if(draft && Array.isArray(draft.pads) && draft.pads.length){
+        state.pads = normalizePads({ pads: draft.pads });
+        memoDirty = true;
+      }
+    }catch(e){}
     unsubMemo = mod.onSnapshot(memoRef, { includeMetadataChanges: true }, snap=>{
       const d = snap.exists() ? snap.data() : {};
       const incoming = normalizePads(d);
-      /* 타이핑 중(포커스 상태)에는 현재 탭 내용을 보호 */
-      if(padBuilt && document.activeElement === padEl){
-        const local = curPad();
-        const i = incoming.findIndex(p=>p.id === local.id);
-        if(i >= 0) incoming[i] = local; else incoming.push(local);
+      const fromServer = !snap.metadata.fromCache;
+      /* 저장 안 된 로컬 수정(또는 입력 중)이 있으면 통째 교체 대신 패드별 병합 */
+      if(memoDirty || (padBuilt && document.activeElement === padEl)){
+        state.pads = mergePads(incoming, state.pads);
+      }else{
+        state.pads = incoming;   // 수정한 게 없으면 받은 내용(최신)을 그대로 신뢰
       }
-      state.pads = incoming;
+      if(fromServer){
+        memoServerSynced = true;
+        if(memoDirty){
+          /* 서버 최신과 병합을 마쳤으니 이제 안전하게 저장 */
+          memoDirty = false;
+          state.fb.saveMemo(padsPayload());
+          store.del(PAD_DRAFT_KEY);
+        }
+      }
       ensurePads();
       if(!state.pads.find(p=>p.id === state.padActive)) state.padActive = state.pads[0].id;
       if(padBuilt){
@@ -1781,7 +1846,7 @@ async function startLive(cfg){
         }
         renderPadTabs(); updatePadMeta();
       }
-      state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer;
+      state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer || memoDirty;
       setStatus();
     }, err=>{
       if(!String(err && err.code).includes("permission-denied"))
