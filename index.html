@@ -1250,6 +1250,8 @@ const MAX_PADS = 12;
 let memoTimer = null, padBuilt = false, padEl = null;
 let memoDirty = false;           // 아직 서버에 저장 안 된 '실제 수정'이 있는가
 let memoServerSynced = false;    // 이 세션에서 서버(캐시 아님) 스냅샷을 받았는가
+let lastPadInput = 0;            // 마지막 입력 시각 — '타이핑 중'과 '커서만 깜빡임'을 구분
+const TYPING_WINDOW = 1500;      // 이 시간(ms) 안에 입력이 있었으면 타이핑 중으로 간주
 let padFs = parseInt(store.get(PAD_FS_KEY) || "14", 10);
 if(!(padFs >= 11 && padFs <= 20)) padFs = 14;
 let padBg = store.get(PAD_BG_KEY) === "white" ? "white" : "paper";
@@ -1313,6 +1315,63 @@ function mergePads(server, local){
   });
   local.forEach(lp=>{ if(!sIds.has(lp.id)) out.push(lp); });
   return out;
+}
+/* 커서(캐럿) 위치를 글자 오프셋으로 저장/복원 — 유휴 포커스 상태에서 원격 반영 시 사용 */
+function getCaretOffset(root){
+  const sel = getSelection();
+  if(!sel.rangeCount || !root.contains(sel.anchorNode)) return null;
+  const r = sel.getRangeAt(0);
+  const pre = r.cloneRange();
+  pre.selectNodeContents(root);
+  pre.setEnd(r.startContainer, r.startOffset);
+  return pre.toString().length;
+}
+function setCaretOffset(root, off){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n, acc = 0;
+  while((n = walker.nextNode())){
+    const len = n.textContent.length;
+    if(acc + len >= off){
+      const r = document.createRange();
+      r.setStart(n, Math.max(0, off - acc)); r.collapse(true);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      return;
+    }
+    acc += len;
+  }
+  const r = document.createRange();
+  r.selectNodeContents(root); r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+/* 수신된 패드 상태를 적용하는 단일 진입점 (실시간 스냅샷 처리) */
+function applyIncomingPads(incoming, fromServer){
+  const focusedOnPad = padBuilt && document.activeElement === padEl;
+  const typingRecently = focusedOnPad && (Date.now() - lastPadInput < TYPING_WINDOW);
+  if(memoDirty || typingRecently){
+    state.pads = mergePads(incoming, state.pads);   // 내 미저장 수정 보호
+  }else{
+    state.pads = incoming;                          // 수정 없으면 최신을 그대로 신뢰
+  }
+  if(fromServer){
+    memoServerSynced = true;
+    if(memoDirty && state.mode === "live" && state.fb && state.fb.saveMemo){
+      memoDirty = false;
+      state.fb.saveMemo(padsPayload());             // 병합 결과를 서버로
+      store.del(PAD_DRAFT_KEY);
+    }
+  }
+  ensurePads();
+  if(!state.pads.find(p=>p.id === state.padActive)) state.padActive = state.pads[0].id;
+  if(padBuilt){
+    const p = curPad();
+    if(padEl.innerHTML !== p.html && !typingRecently){
+      /* 커서만 깜빡이는 유휴 상태: 커서 위치를 보존하며 원격 변경 즉시 반영 */
+      const off = focusedOnPad ? getCaretOffset(padEl) : null;
+      padEl.innerHTML = p.html;
+      if(off !== null) setCaretOffset(padEl, off);
+    }
+    renderPadTabs(); updatePadMeta();
+  }
 }
 function loadPadIntoEl(){
   /* 탭마다 새 편집 요소로 교체 → 실행취소 이력이 탭 사이에 섞이지 않음 */
@@ -1418,6 +1477,7 @@ function syncFromPad(){
   p.html = padEl.innerHTML;
   p.text = htmlToText(p.html);
   p.updatedAt = Date.now();
+  lastPadInput = Date.now();
   updatePadMeta();
   scheduleMemoSave();
 }
@@ -1577,11 +1637,13 @@ function buildPadHost(){
 if(location.hostname === "localhost" || location.hostname === "127.0.0.1"){
   window.__padTest = {
     mergePads,
+    applyIncomingPads,
     getPads: ()=>state.pads,
     setPads: p=>{ state.pads = p; },
     isDirty: ()=>memoDirty,
     setDirty: v=>{ memoDirty = v; },
-    isSynced: ()=>memoServerSynced
+    isSynced: ()=>memoServerSynced,
+    getCaretOffset, setCaretOffset
   };
 }
 
@@ -1820,32 +1882,7 @@ async function startLive(cfg){
     }catch(e){}
     unsubMemo = mod.onSnapshot(memoRef, { includeMetadataChanges: true }, snap=>{
       const d = snap.exists() ? snap.data() : {};
-      const incoming = normalizePads(d);
-      const fromServer = !snap.metadata.fromCache;
-      /* 저장 안 된 로컬 수정(또는 입력 중)이 있으면 통째 교체 대신 패드별 병합 */
-      if(memoDirty || (padBuilt && document.activeElement === padEl)){
-        state.pads = mergePads(incoming, state.pads);
-      }else{
-        state.pads = incoming;   // 수정한 게 없으면 받은 내용(최신)을 그대로 신뢰
-      }
-      if(fromServer){
-        memoServerSynced = true;
-        if(memoDirty){
-          /* 서버 최신과 병합을 마쳤으니 이제 안전하게 저장 */
-          memoDirty = false;
-          state.fb.saveMemo(padsPayload());
-          store.del(PAD_DRAFT_KEY);
-        }
-      }
-      ensurePads();
-      if(!state.pads.find(p=>p.id === state.padActive)) state.padActive = state.pads[0].id;
-      if(padBuilt){
-        if(document.activeElement !== padEl){
-          const p = curPad();
-          if(padEl.innerHTML !== p.html) padEl.innerHTML = p.html;
-        }
-        renderPadTabs(); updatePadMeta();
-      }
+      applyIncomingPads(normalizePads(d), !snap.metadata.fromCache);
       state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer || memoDirty;
       setStatus();
     }, err=>{
