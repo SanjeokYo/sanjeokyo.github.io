@@ -163,6 +163,18 @@ header{
 #padText:empty::before{content:attr(data-ph); color:var(--muted); pointer-events:none}
 #padText b, #padText strong{font-weight:800}
 #padText s, #padText strike, #padText del{text-decoration:line-through; color:var(--muted)}
+/* 구분선: 위아래 여백 포함 정확히 한 줄(1.75em) 높이 → 줄노트 격자와 어긋나지 않음 */
+#padText hr{
+  border:none; height:0; margin:calc(0.875em - 1px) 0;
+  border-top:2px solid color-mix(in srgb, var(--text) 26%, transparent);
+}
+.hrstyle-dashed #padText hr{border-top-style:dashed}
+.hrstyle-accent #padText hr{
+  border-top:none; height:2px; border-radius:2px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--accent) 65%, transparent) 18%,
+    color-mix(in srgb, var(--accent2) 65%, transparent) 82%, transparent);
+}
 .padBtn.strike{width:34px; justify-content:center; padding:0; font-weight:800; text-decoration:line-through}
 #padText.paper{
   background-color:color-mix(in srgb, #f59e0b 5%, var(--card));
@@ -1246,6 +1258,7 @@ $("#lUrl").addEventListener("blur", ()=>{
 /* ---------- 메모 (멀티탭 스크래치패드 · 굵게 서식 지원) ---------- */
 const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg", PAD_TAB_KEY = "bmh_padtab", PAD_DRAFT_KEY = "bmh_paddraft";
 const PAD_STYLE = "file";        // 메모 탭 모양: 'file' 파일탭형 | 'pill' 알약형 | 'sheet' 시트탭형
+const HR_STYLE = "solid";        // 구분선 모양: 'solid' 실선 | 'dashed' 점선 | 'accent' 포인트
 const MAX_PADS = 12;
 let memoTimer = null, padBuilt = false, padEl = null;
 let memoDirty = false;           // 아직 서버에 저장 안 된 '실제 수정'이 있는가
@@ -1446,6 +1459,9 @@ function sanitizePad(html){
       if(tag === "BR"){
         const br = document.createElement("br"); ch.replaceWith(br); return;
       }
+      if(tag === "HR"){
+        const hr = document.createElement("hr"); ch.replaceWith(hr); return;
+      }
       walk(ch);
       if(tag === "DIV" || tag === "P"){
         const d = document.createElement("div");
@@ -1471,7 +1487,12 @@ function sanitizePad(html){
   return tmp.innerHTML;
 }
 function textToHtml(t){ const d = document.createElement("div"); d.innerText = String(t||""); return d.innerHTML; }
-function htmlToText(h){ const d = document.createElement("div"); d.innerHTML = String(h||""); return d.innerText.replace(/ /g," "); }
+function htmlToText(h){
+  const d = document.createElement("div");
+  d.innerHTML = String(h||"");
+  d.querySelectorAll("hr").forEach(x=>x.replaceWith(document.createTextNode("\n──────────\n")));
+  return d.innerText.replace(/\u00a0/g," ");
+}
 function syncFromPad(){
   const p = curPad();
   p.html = padEl.innerHTML;
@@ -1544,6 +1565,7 @@ function buildPadHost(){
   padBuilt = true;
   const host = $("#padHost");
   host.classList.add("padstyle-" + PAD_STYLE);
+  host.classList.add("hrstyle-" + HR_STYLE);
   const tabs = el("div","padTabs noscroll"); tabs.id = "padTabs";
   const bar = el("div","padBar");
   const mkBtn = (cls, html, title, fn, keepSel)=>{
@@ -1582,6 +1604,10 @@ function buildPadHost(){
     const wd = "일월화수목금토"[d.getDay()];
     document.execCommand("insertText", false, `── ${d.getMonth()+1}/${d.getDate()}(${wd}) ${z(d.getHours())}:${z(d.getMinutes())} ──\n`);
     syncFromPad();
+  }, true);
+  /* 구분선 */
+  mkBtn("icon",'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12h16"/><path d="M4 6h5M15 6h5M4 18h5M15 18h5" opacity=".35"/></svg>',"커서 위치에 구분선 넣기", ()=>{
+    padEl.focus(); document.execCommand("insertHorizontalRule"); syncFromPad();
   }, true);
   /* 실행 취소 */
   mkBtn("icon","↩","실행 취소 (Ctrl+Z)", ()=>{
