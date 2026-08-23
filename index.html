@@ -205,6 +205,7 @@ header{
   position:relative;
 }
 .pgchip .nm{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pgchip,.padTab{touch-action:manipulation; user-select:none; -webkit-user-select:none}
 .pgchip.active{color:var(--gc, var(--accent)); background:color-mix(in srgb, var(--gc, var(--accent)) 10%, transparent); border-color:color-mix(in srgb, var(--gc, var(--accent)) 40%, transparent)}
 .pgchip.add{border-style:dashed; color:var(--accent)}
 .pgLabel{flex:none; font-size:10.5px; font-weight:800; color:var(--muted); padding:0 4px 0 8px; cursor:pointer; align-self:center}
@@ -630,6 +631,7 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
       <p class="dhint">같은 그룹의 메모 탭은 이름 순(오름차순)으로 자동 정렬됩니다.</p></div>
     <div class="field"><label>탭 색상 (자동 = 기본 배정색)</label><div class="swatches" id="pSwatches"></div></div>
     <div class="drow">
+      <button type="button" class="btn danger" id="pDelete">삭제</button>
       <button type="button" class="btn ghost" id="pCancel">취소</button>
       <button type="submit" class="btn" id="pSave">저장</button>
     </div>
@@ -1526,6 +1528,7 @@ function normalizeMemo(d){
                html, text: typeof p.text === "string" ? p.text : htmlToText(html),
                color: (typeof p.color === "string" && /^#[0-9a-fA-F]{6}$/.test(p.color)) ? p.color : "",
                gid: typeof p.gid === "string" ? p.gid : "",
+               grp: p.grp === true,
                updatedAt: Number(p.updatedAt) || 0 };
     }).filter(Boolean);
   }else if(d && ((typeof d.html === "string" && d.html) || (typeof d.text === "string" && d.text))){
@@ -1542,6 +1545,7 @@ function normalizeMemo(d){
              updatedAt: Number(g.updatedAt) || 0 };
   }).filter(Boolean) : [];
   const gids = new Set(groups.map(g=>g.id));
+  pads = pads.filter(p=>!(p.grp && p.gid && !gids.has(p.gid)));   // 삭제된 그룹의 그룹 메모는 함께 정리
   pads.forEach(p=>{ if(p.gid && !gids.has(p.gid)) p.gid = ""; });
   return { pads, groups };
 }
@@ -1557,7 +1561,7 @@ function curPad(){
 function memoPayload(){
   return {
     pads: state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html),
-                               color: p.color || "", gid: p.gid || "", updatedAt: p.updatedAt })),
+                               color: p.color || "", gid: p.gid || "", grp: p.grp === true, updatedAt: p.updatedAt })),
     groups: state.padGroups.map(g=>({ id: g.id, name: g.name, color: g.color || "", updatedAt: g.updatedAt }))
   };
 }
@@ -1589,8 +1593,19 @@ function padGroupsSorted(){
   return [...state.padGroups].sort((a,b)=>a.name.localeCompare(b.name, "ko", { numeric:true }));
 }
 function padsOf(gid){
-  return state.pads.filter(p=>(p.gid||"") === (gid||""))
+  return state.pads.filter(p=>!p.grp && (p.gid||"") === (gid||""))
     .sort((a,b)=>a.name.localeCompare(b.name, "ko", { numeric:true }));
+}
+/* 그룹 전용 메모(그룹당 1개, 결정적 id로 기기 간 중복 생성 방지) */
+function ensureGrpPad(gid){
+  const id = "gm_" + (gid || "");
+  let p = state.pads.find(x=>x.id === id);
+  if(!p){
+    p = { id, name: "그룹 메모", html: "", text: "", color: "", gid: gid || "", grp: true, updatedAt: Date.now() };
+    state.pads.push(p);
+    scheduleMemoSave();
+  }
+  return p;
 }
 function effPadColor(p){
   if(p.color) return p.color;
@@ -1615,6 +1630,9 @@ function getSelGid(){
   return p.gid || "";
 }
 function selectPadGroup(gid){
+  switchPad(ensureGrpPad(gid).id);       // 원클릭: 그 그룹의 '그룹 메모'를 연다 (하위 탭 하이라이트 없음)
+}
+function selectPadGroupOld(gid){
   const list = padsOf(gid);
   if(list.length){
     state.padGroupSel = null;
@@ -1684,6 +1702,11 @@ function openPadGrpEdit(gid){
   if(!g) setTimeout(()=>$("#gpName").focus(), 40);
 }
 $("#gpCancel").addEventListener("click", ()=>$("#dlgPGrp").close());
+$("#pDelete").addEventListener("click", ()=>{
+  const id = editingPadId;
+  $("#dlgPad").close();
+  if(id) delPad(id);                      // 확인창을 거쳐 삭제
+});
 $("#formPGrp").addEventListener("submit", e=>{
   e.preventDefault();
   const name = $("#gpName").value.trim().slice(0, 20);
@@ -1694,7 +1717,10 @@ $("#formPGrp").addEventListener("submit", e=>{
   }else{
     const g = { id: "pg_" + uid(), name, color: grpPick || "", updatedAt: Date.now() };
     state.padGroups.push(g);
-    state.padGroupSel = g.id;
+    $("#dlgPGrp").close();
+    scheduleMemoSave();
+    selectPadGroup(g.id);                 // 새 그룹의 그룹 메모를 바로 연다
+    return;
   }
   $("#dlgPGrp").close();
   scheduleMemoSave(); renderPadTabs();
@@ -1703,13 +1729,19 @@ $("#gpDelete").addEventListener("click", async ()=>{
   const gid = editingGrpId; if(!gid) return;
   const g = state.padGroups.find(x=>x.id === gid); if(!g) return;
   const n = padsOf(gid).length;
-  const yes = await uiConfirm("그룹 삭제", `'${g.name}' 그룹을 삭제할까요?` + (n ? `\n안의 메모 탭 ${n}개는 '기본'으로 이동합니다.` : ""), { ok:"삭제", danger:true });
+  const yes = await uiConfirm("그룹 삭제", `'${g.name}' 그룹을 삭제할까요?\n그룹 메모도 함께 삭제됩니다.` + (n ? `\n안의 메모 탭 ${n}개는 '기본'으로 이동합니다.` : ""), { ok:"삭제", danger:true });
   if(!yes) return;
+  state.pads = state.pads.filter(p=>!(p.grp && p.gid === gid));          // 그룹 메모 동반 삭제
   state.pads.forEach(p=>{ if(p.gid === gid){ p.gid = ""; p.updatedAt = Date.now(); } });
   state.padGroups = state.padGroups.filter(x=>x.id !== gid);
-  if(state.padGroupSel === gid) state.padGroupSel = "";
+  if(state.padGroupSel === gid) state.padGroupSel = null;
+  if(!state.pads.find(x=>x.id === state.padActive)){
+    state.padActive = ensureGrpPad("").id;                               // 삭제된 그룹 메모를 보고 있었다면 '기본' 그룹 메모로
+    store.set(PAD_TAB_KEY, state.padActive);
+  }
+  ensurePads();
   $("#dlgPGrp").close();
-  scheduleMemoSave(); renderPadTabs(); toast("그룹을 삭제했어요");
+  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(); toast("그룹을 삭제했어요");
 });
 function addPadGroup(){ openPadGrpEdit(null); }
 function editPadGroup(gid){ openPadGrpEdit(gid); }
@@ -1802,7 +1834,7 @@ function addPad(){
   setTimeout(()=>padEl.focus(), 60);
 }
 async function delPad(id){
-  const p = state.pads.find(x=>x.id === id); if(!p) return;
+  const p = state.pads.find(x=>x.id === id); if(!p || p.grp) return;
   const n = p.text.trim().length;
   const yes = await uiConfirm("메모 탭 삭제", `'${p.name}' 메모 탭을 삭제할까요?` + (n ? `\n내용 ${n.toLocaleString()}자도 함께 삭제됩니다.` : ""), { ok:"삭제", danger:true });
   if(!yes) return;
@@ -1810,15 +1842,11 @@ async function delPad(id){
   const idxInGrp = padsOf(gid).findIndex(x=>x.id === id);
   state.pads = state.pads.filter(x=>x.id !== id);
   if(state.padActive === id){
-    /* 같은 그룹의 이웃 탭으로 이동, 그룹이 비면 그 그룹에 빈 메모를 새로 만들어 머무름 */
-    let sib = padsOf(gid);
-    if(!sib.length){
-      const names = new Set(state.pads.map(x=>x.name));
-      let n = 1; while(names.has("메모 " + n)) n++;
-      state.pads.push({ id: "p_" + uid(), name: "메모 " + n, html: "", text: "", color: "", gid, updatedAt: Date.now() });
-      sib = padsOf(gid);
-    }
-    state.padActive = sib[Math.min(Math.max(idxInGrp, 0), sib.length - 1)].id;
+    /* 같은 그룹의 이웃 탭으로, 그룹이 비면 그 그룹의 '그룹 메모'로 이동 */
+    const sib = padsOf(gid);
+    state.padActive = sib.length
+      ? sib[Math.min(Math.max(idxInGrp, 0), sib.length - 1)].id
+      : ensureGrpPad(gid).id;
     state.padGroupSel = null;
     store.set(PAD_TAB_KEY, state.padActive);
   }
@@ -1888,7 +1916,15 @@ $("#formPad").addEventListener("submit", async e=>{
   scheduleMemoSave(); renderPadTabs(); updatePadMeta();
 });
 $("#pCancel").addEventListener("click", ()=>$("#dlgPad").close());
-function renamePad(){ openPadDlg(state.padActive); }
+function renamePad(){
+  const p = curPad();
+  if(p.grp){
+    if(p.gid) openPadGrpEdit(p.gid);
+    else toast("'기본'은 이름·색을 바꿀 수 없어요");
+    return;
+  }
+  openPadDlg(state.padActive);
+}
 /* 드롭다운형: 그룹 목록 다이얼로그 */
 function openPadGrpDlg(){
   const list = $("#pgList"); list.textContent = "";
@@ -1923,9 +1959,17 @@ function padTabEl(p){
     t.style.background = `color-mix(in srgb, ${c} 12%, var(--card))`;
     t.style.borderColor = `color-mix(in srgb, ${c} 45%, transparent)`;
   }
-  t.title = p.name + " — 더블클릭: 탭 설정(이름·그룹·색상) · 삭제는 [− 탭 삭제]";
-  t.addEventListener("click", ()=>switchPad(p.id));
-  t.addEventListener("dblclick", ()=>openPadDlg(p.id));
+  t.title = p.name + " — 클릭: 열기 · 더블클릭: 설정(이름·그룹·색상·삭제)";
+  t.addEventListener("click", ()=>{
+    const now = Date.now();
+    if(lastTabClick.k === p.id && now - lastTabClick.t < 380){
+      lastTabClick = { k:null, t:0 };
+      openPadDlg(p.id);
+      return;
+    }
+    lastTabClick = { k: p.id, t: now };
+    switchPad(p.id);
+  });
   return t;
 }
 function padAddEl(){
@@ -1942,11 +1986,20 @@ function pgChipEl(gid, name, editable){
     const gc = effGrpColor(state.padGroups.find(x=>x.id === gid));
     if(gc) b.style.setProperty("--gc", gc);
   }
-  b.title = editable ? (active ? name + " — 클릭: 이름·색상 설정" : name + " — 더블클릭: 이름·색상 설정") : name;
-  b.addEventListener("click", ()=>{ if(editable && active) openPadGrpEdit(gid); else selectPadGroup(gid); });
-  if(editable) b.addEventListener("dblclick", ()=>openPadGrpEdit(gid));
+  b.title = name + " — 클릭: 그룹 메모" + (editable ? " · 더블클릭: 그룹 설정" : "");
+  b.addEventListener("click", ()=>{
+    const now = Date.now();
+    if(editable && lastChipClick.k === (gid||"") && now - lastChipClick.t < 380){
+      lastChipClick = { k:null, t:0 };
+      openPadGrpEdit(gid);
+      return;
+    }
+    lastChipClick = { k: gid||"", t: now };
+    selectPadGroup(gid);
+  });
   return b;
 }
+let lastChipClick = { k:null, t:0 }, lastTabClick = { k:null, t:0 };
 function renderPadTabs(){
   const box = $("#padTabs"); if(!box) return;
   box.textContent = "";
@@ -2089,7 +2142,8 @@ function updatePadMeta(){
   const m = $("#padMeta");
   if(!m) return;
   const p = curPad();
-  m.textContent = p.text.length.toLocaleString() + "자" + (p.updatedAt ? " · 저장 " + fmtTs(p.updatedAt) : "");
+  const tag = p.grp ? ((p.gid ? ((state.padGroups.find(g=>g.id === p.gid) || {}).name || "그룹") : "기본") + " 그룹 메모 · ") : "";
+  m.textContent = tag + p.text.length.toLocaleString() + "자" + (p.updatedAt ? " · 저장 " + fmtTs(p.updatedAt) : "");
 }
 function scheduleMemoSave(){
   memoDirty = true;                      // 실제 수정이 있을 때만 이 함수가 불림
@@ -2178,8 +2232,7 @@ function buildPadHost(){
     padEl.focus(); document.execCommand("undo"); syncFromPad();
   }, true);
   /* 탭 이름 바꾸기 · 탭 삭제 */
-  mkBtn("icon","✏ 설정","현재 메모 탭 설정: 이름·그룹·색상 (탭 더블클릭도 가능)", renamePad);
-  mkBtn("icon","− 탭 삭제","현재 메모 탭 삭제 (확인창이 한 번 더 물어봐요)", ()=>delPad(state.padActive));
+  mkBtn("icon","✏ 설정","현재 메모 탭(또는 그룹 메모의 그룹) 설정 — 탭 더블클릭도 가능", renamePad);
   bar.appendChild(el("span","padSep"));
   /* 전체 복사 (굵게 서식 포함) */
   mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> 전체 복사',"현재 메모 탭 전체 복사", async ()=>{
