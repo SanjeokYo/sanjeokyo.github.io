@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로블정음 회화버전 28개 법칙 영작 훈련</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-size: 16px;
+        }
+        /* 28개 버튼 그리드 배치 */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 600px) {
+            .btn-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .ws-btn {
+            background-color: #fff;
+            color: #2c3e50;
+            border: 1px solid #bdc3c7;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .ws-btn:hover {
+            background-color: #34495e;
+            color: white;
+            border-color: #34495e;
+        }
+        .ws-btn.active {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        /* 영작 카드 */
+        .card {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            text-align: left;
+            margin-top: 10px;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .law-title {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-left: 5px solid #e74c3c;
+            padding-left: 10px;
+        }
+        .korean-box {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            background: #fff9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ffe3e3;
+        }
+        .hint-box {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .writing-input {
+            width: 100%;
+            height: 70px;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            resize: none;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        .btn-action {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-action:hover {
+            background-color: #27ae60;
+        }
+        /* 정답 영역 */
+        .answer-box {
+            display: none;
+            background-color: #f9f9f9;
+            border: 1px dashed #2ecc71;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+        .english-ans {
+            font-size: 17px;
+            color: #16a085;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>로블정음 회화버전 28개 법칙</h1>
+    <div class="subtitle">연습하고 싶은 WS 법칙 버튼을 선택하세요.</div>
+
+    <!-- 28개 버튼 영역 -->
+    <div class="btn-grid" id="btnGrid"></div>
+
+    <!-- 영작 테스트 카드 -->
+    <div class="card" id="quizCard">
+        <div class="law-title" id="displayLaw">WS 01. THERE IS</div>
+        
+        <div class="korean-box" id="displayKorean">한국어 문제 문장</div>
+        <div class="hint-box" id="displayHint">💡 단어 힌트: </div>
+
+        <textarea class="writing-input" id="userInput" placeholder="구조를 생각하며 영어 문장을 직접 작성해보세요."></textarea>
+        
+        <div>
+            <button class="btn-action" id="ansBtn" onclick="toggleAnswer()">정답 및 구조 확인</button>
+        </div>
+
+        <div class="answer-box" id="answerBox">
+            <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">모범 답안:</div>
+            <div class="english-ans" id="displayEnglish">English Sentence</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 28개 법칙 데이터베이스 정의
+    const lawsData = {
+        1: { name: "THERE IS", kor: "테이블 위에 풀지 않은 수많은 문제들이 있다.", hint: "unsolved problems, on the table", eng: "There are many unsolved problems on the table." },
+        2: { name: "BE동사 핵심조립", kor: "그녀가 회의에 늦은 이유는 교통 체증 때문이다.", hint: "the reason why, late for the meeting, due to the traffic jam", eng: "The reason why she was late for the meeting is due to the traffic jam." },
+        3: { name: "목보형 / 목보명", kor: "그 소식은 우리 모두를 행복하게 만들었다.", hint: "the news, make, all of us, happy", eng: "The news made all of us happy." },
+        4: { name: "YOU LOOK HAPPY.", kor: "그의 목소리는 전화상으로 매우 피곤하게 들렸다.", hint: "his voice, sound, very tired, over the phone", eng: "His voice sounded very tired over the phone." },
+        5: { name: "명사 TO부정사", kor: "나는 오늘 밤에 끝내야 할 많은 숙제가 있다.", hint: "have a lot of homework, to finish, tonight", eng: "I have a lot of homework to finish tonight." },
+        6: { name: "NS + 형용사 + TO부정사", kor: "이 강은 아이들이 수영하기에 안전하지 않다.", hint: "this river, not safe, for children, to swim in", eng: "This river is not safe for children to swim in." },
+        7: { name: "V + THAT", kor: "나는 마침내 우리가 올바른 결정을 내렸다고 믿는다.", hint: "finally believe, that, make the right decision", eng: "I finally believe that we made the right decision." },
+        8: { name: "준동사", kor: "낯선 사람들 앞에서 말하는 것은 많은 용기가 필요하다.", hint: "speaking in front of strangers, require, a lot of courage", eng: "Speaking in front of strangers requires a lot of courage." },
+        9: { name: "목보투", kor: "의사는 나에게 매일 규칙적으로 운동하라고 조언했다.", hint: "the doctor, advise, me, to exercise regularly, every day", eng: "The doctor advised me to exercise regularly every day." },
+        10: { name: "쇼 미더 머니", kor: "그는 나에게 그의 최신 스마트폰을 보여주었다.", hint: "he, show, me, his latest smartphone", eng: "He showed me his latest smartphone." },
+        11: { name: "감정의 원인", kor: "나는 그 시험 결과를 듣고서 정말 안도했다.", hint: "be so relieved, to hear, the exam results", eng: "I was so relieved to hear the exam results." },
+        12: { name: "접속사", kor: "비록 비가 심하게 내렸지만, 우리는 축구 경기를 계속했다.", hint: "although, rain heavily, go on with our soccer match", eng: "Although it rained heavily, we went on with our soccer match." },
+        13: { name: "가주 진주", kor: "외국어를 유창하게 마스터하는 것은 쉽지 않다.", hint: "it is not easy, to master a foreign language fluently", eng: "It is not easy to master a foreign language fluently." },
+        14: { name: "SEEM", kor: "그녀는 새로운 업무 환경에 만족하는 것처럼 보인다.", hint: "she, seem to be satisfied with, new work environment", eng: "She seems to be satisfied with the new work environment." },
+        15: { name: "THOSE WHO 동사", kor: "약속을 지키는 사람들은 누구에게나 신뢰를 받는다.", hint: "those who, keep their promises, be trusted by everyone", eng: "Those who keep their promises are trusted by everyone." },
+        16: { name: "사역동사 / 지각동사", kor: "나는 그가 어둠 속에서 혼자 울고 있는 것을 들었다.", hint: "I, hear, him, crying alone, in the dark", eng: "I heard him crying alone in the dark." },
+        17: { name: "의문사 TO부정사", kor: "그녀는 이 위기 상황에서 무엇을 해야 할지 모르겠다.", hint: "she, not know, what to do, in this crisis situation", eng: "She doesn't know what to do in this crisis situation." },
+        18: { name: "BY ~ING", kor: "매일 영어를 연습함으로써 너는 너의 회화 실력을 향상시킬 수 있다.", hint: "by practicing English every day, improve, speaking skills", eng: "By practicing English every day, you can improve your speaking skills." },
+        19: { name: "NSV", kor: "내가 어제 구매했던 그 가방은 완전 가짜였다.", hint: "the bag, I bought yesterday, be a total fake", eng: "The bag I bought yesterday was a total fake." },
+        20: { name: "WHAT", kor: "내가 너에게 정말로 원하는 것은 오직 진실뿐이다.", hint: "what I really want from you, be only the truth", eng: "What I really want from you is only the truth." },
+        21: { name: "WHETHER", kor: "그가 파티에 올지 안 올지는 나에게 중요하지 않다.", hint: "whether he will come to the party or not, not matter to me", eng: "Whether he will come to the party or not doesn't matter to me." },
+        22: { name: "N + ING", kor: "창가에서 책을 읽고 있는 그 소년은 내 남동생이다.", hint: "the boy, reading a book by the window, be my brother", eng: "The boy reading a book by the window is my brother." },
+        23: { name: "N + P.P", kor: "독일에서 만들어진 이 자동차들은 안전성으로 유명하다.", hint: "this car, made in Germany, be famous for its safety", eng: "This car made in Germany is famous for its safety." },
+        24: { name: "N + THAT", kor: "이것이 내가 수년간 찾고 있었던 바로 그 증거이다.", hint: "this is the very evidence, that, look for, for years", eng: "This is the very evidence that I have been looking for for years." },
+        25: { name: "문두 앞 ING", kor: "집에 걸어오다가, 나는 우연히 옛 초등학교 친구를 만났다.", hint: "walking back home, run into, old elementary school friend", eng: "Walking back home, I ran into an old elementary school friend." },
+        26: { name: "조동사 HAVE P.P", kor: "너는 어제 그에게 그렇게 무례하게 말하지 말았어야 했다.", hint: "you, should not have spoken, to him so rudely, yesterday", eng: "You should not have spoken to him so rudely yesterday." },
+        27: { name: "AS IF", kor: "그는 마치 그 비밀에 대해 모든 것을 다 아는 것처럼 행동한다.", hint: "he, act, as if, know everything about the secret", eng: "He acts as if he knew everything about the secret." },
+        28: { name: "SO ~ THAT", kor: "그 박스는 너무 무거워서 나는 그것을 혼자서 들 수 없었다.", hint: "the box, so heavy, that, cannot lift it alone", eng: "The box was so heavy that I couldn't lift it alone." }
+    };
+
+    // 버튼 자동 생성 생성기
+    const btnGrid = document.getElementById('btnGrid');
+    for (let i = 1; i <= 28; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'ws-btn';
+        btn.id = `btn-${i}`;
+        // 패딩 번호 처리 (01, 02...)
+        const numStr = i < 10 ? '0' + i : i;
+        btn.innerText = `WS ${numStr}`;
+        btn.onclick = () => loadQuiz(i);
+        btnGrid.appendChild(btn);
+    }
+
+    let activeIndex = null;
+
+    // 문제 불러오기
+    function loadQuiz(index) {
+        activeIndex = index;
+        
+        // 버튼 활성화 스타일 변경
+        const allButtons = document.querySelectorAll('.ws-btn');
+        allButtons.forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${index}`).classList.add('active');
+
+        // 카드 및 입력 데이터 세팅
+        const data = lawsData[index];
+        const numStr = index < 10 ? '0' + index : index;
+
+        document.getElementById('displayLaw').innerText = `WS ${numStr}. ${data.name}`;
+        document.getElementById('displayKorean').innerText = data.kor;
+        document.getElementById('displayHint').innerText = `💡 단어 힌트: ${data.hint}`;
+        document.getElementById('displayEnglish').innerText = data.eng;
+        
+        // 입력 칸 리셋 및 정답창 닫기
+        document.getElementById('userInput').value = '';
+        document.getElementById('answerBox').style.display = 'none';
+        document.getElementById('ansBtn').innerText = '정답 및 구조 확인';
+        
+        // 카드 보이기
+        document.getElementById('quizCard').style.display = 'block';
+    }
+
+    // 정답 보기 / 숨기기 토글
+    function toggleAnswer() {
+        const answerBox = document.getElementById('answerBox');
+        const btn = document.getElementById('ansBtn');
+        
+        if (answerBox.style.display === 'none' || answerBox.style.display === '') {
+            answerBox.style.display = 'block';
+            btn.innerText = '정답 숨기기';
+        } else {
+            answerBox.style.display = 'none';
+            btn.innerText = '정답 및 구조 확인';
+        }
+    }
+</script>
+
+</body>
+</html>
