@@ -1558,7 +1558,7 @@ function memoPayload(){
   return {
     pads: state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html),
                                color: p.color || "", gid: p.gid || "", updatedAt: p.updatedAt })),
-    groups: state.padGroups.map(g=>({ id: g.id, name: g.name, updatedAt: g.updatedAt }))
+    groups: state.padGroups.map(g=>({ id: g.id, name: g.name, color: g.color || "", updatedAt: g.updatedAt }))
   };
 }
 /* 패드별 병합: 같은 id는 updatedAt이 새로운 쪽, 한쪽에만 있으면 유지 (통째 덮어쓰기 금지) */
@@ -1594,6 +1594,10 @@ function padsOf(gid){
 }
 function effPadColor(p){
   if(p.color) return p.color;
+  if(p.gid){
+    const g = state.padGroups.find(x=>x.id === p.gid);
+    if(g) return effGrpColor(g);          // 그룹 소속 탭의 기본색 = 그룹 글자색
+  }
   let h = 0;
   for(const c of p.id) h = (h + c.charCodeAt(0)) % COLORS.length;
   return COLORS[h];
@@ -1802,9 +1806,23 @@ async function delPad(id){
   const n = p.text.trim().length;
   const yes = await uiConfirm("메모 탭 삭제", `'${p.name}' 메모 탭을 삭제할까요?` + (n ? `\n내용 ${n.toLocaleString()}자도 함께 삭제됩니다.` : ""), { ok:"삭제", danger:true });
   if(!yes) return;
+  const gid = p.gid || "";
+  const idxInGrp = padsOf(gid).findIndex(x=>x.id === id);
   state.pads = state.pads.filter(x=>x.id !== id);
+  if(state.padActive === id){
+    /* 같은 그룹의 이웃 탭으로 이동, 그룹이 비면 그 그룹에 빈 메모를 새로 만들어 머무름 */
+    let sib = padsOf(gid);
+    if(!sib.length){
+      const names = new Set(state.pads.map(x=>x.name));
+      let n = 1; while(names.has("메모 " + n)) n++;
+      state.pads.push({ id: "p_" + uid(), name: "메모 " + n, html: "", text: "", color: "", gid, updatedAt: Date.now() });
+      sib = padsOf(gid);
+    }
+    state.padActive = sib[Math.min(Math.max(idxInGrp, 0), sib.length - 1)].id;
+    state.padGroupSel = null;
+    store.set(PAD_TAB_KEY, state.padActive);
+  }
   ensurePads();
-  if(state.padActive === id){ state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive); }
   loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(); toast("메모 탭을 삭제했어요");
 }
 let editingPadId = null, padPick = "";
@@ -2215,6 +2233,7 @@ if(location.hostname === "localhost" || location.hostname === "127.0.0.1"){
   window.__padTest = {
     mergePads,
     applyIncomingPads,
+    memoPayload,
     getPads: ()=>state.pads,
     setPads: p=>{ state.pads = p; },
     isDirty: ()=>memoDirty,
