@@ -163,18 +163,94 @@ header{
 #padText:empty::before{content:attr(data-ph); color:var(--muted); pointer-events:none}
 #padText b, #padText strong{font-weight:800}
 #padText s, #padText strike, #padText del{text-decoration:line-through; color:var(--muted)}
-/* 구분선: 위아래 여백 포함 정확히 한 줄(1.75em) 높이 → 줄노트 격자와 어긋나지 않음 */
+/* 구분선: 마진 없는 정확히 한 줄(1.75em) 블록의 맨 아래에 선을 그려 줄노트 줄과 겹침.
+   마진이 없으므로 연속 삽입·어떤 위치 삽입에도 격자가 절대 밀리지 않음 */
 #padText hr{
-  border:none; height:0; margin:calc(0.875em - 1px) 0;
-  border-top:2px solid color-mix(in srgb, var(--text) 26%, transparent);
+  border:none; margin:0; height:1.75em;
+  background-repeat:no-repeat;
+  background-size:100% 2px;
+  background-position:left calc(100% - 2px);
+  background-image:linear-gradient(color-mix(in srgb, var(--text) 34%, transparent),
+                                   color-mix(in srgb, var(--text) 34%, transparent));
 }
-.hrstyle-dashed #padText hr{border-top-style:dashed}
+.hrstyle-dashed #padText hr{
+  background-image:repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--text) 34%, transparent) 0 9px, transparent 9px 15px);
+}
 .hrstyle-accent #padText hr{
-  border-top:none; height:2px; border-radius:2px;
-  background:linear-gradient(90deg, transparent,
-    color-mix(in srgb, var(--accent) 65%, transparent) 18%,
-    color-mix(in srgb, var(--accent2) 65%, transparent) 82%, transparent);
+  background-image:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--accent) 70%, transparent) 18%,
+    color-mix(in srgb, var(--accent2) 70%, transparent) 82%, transparent);
 }
+/* 북마크 드래그 앤 드롭(편집 모드) */
+.chip.dragging{opacity:.4}
+.chip.dropL{box-shadow:inset 3px 0 0 var(--accent)}
+.chip.dropR{box-shadow:inset -3px 0 0 var(--accent)}
+.addlink.dropIn{border-color:var(--accent); color:var(--accent)}
+/* 최근 추가 섹션 */
+.recentN{
+  width:56px; height:26px; border-radius:8px; border:1.5px solid var(--line);
+  background:var(--bg); text-align:center; font-size:16px; font-weight:700; color:var(--text); outline:none;
+}
+.recentN:focus{border-color:var(--accent)}
+.ghead .nlab{font-size:10.5px; color:var(--muted); font-weight:700; margin-left:auto}
+/* 메모 그룹 */
+.padGroupRow{flex:none; display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; padding:0 2px 5px; align-items:center}
+.rowsMode .padGroupRow{overflow:visible; flex-wrap:wrap; padding:2px 2px 0; align-items:flex-end}
+.padGroupRow::-webkit-scrollbar{display:none}
+.pgchip{
+  flex:none; display:inline-flex; align-items:center; gap:4px; height:31px; padding:0 12px;
+  border-radius:9px; border:1px solid var(--line); background:color-mix(in srgb, var(--card) 55%, var(--bg));
+  font-size:13px; font-weight:800; letter-spacing:-.2px; color:var(--gc, var(--muted)); cursor:pointer; max-width:190px;
+  position:relative;
+}
+.pgchip .nm{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pgchip.active{color:var(--gc, var(--accent)); background:color-mix(in srgb, var(--gc, var(--accent)) 10%, transparent); border-color:color-mix(in srgb, var(--gc, var(--accent)) 40%, transparent)}
+.pgchip.add{border-style:dashed; color:var(--accent)}
+.pgLabel{flex:none; font-size:10.5px; font-weight:800; color:var(--muted); padding:0 4px 0 8px; cursor:pointer; align-self:center}
+.pgLabel.active{color:var(--accent)}
+.padTabSep{flex:none; width:1px; height:20px; background:var(--line); margin:0 4px; align-self:center}
+.padTabs.rowsMode{display:block;
+  --pgc:var(--accent);
+  --pgband:color-mix(in srgb, var(--pgc) 8%, var(--card));
+  --pgbandbr:color-mix(in srgb, var(--pgc) 32%, var(--line));
+}
+.rowsMode .pgchip.active{
+  color:var(--gc, var(--accent)); background:var(--pgband);
+  border-color:var(--pgbandbr); border-bottom-color:var(--pgband);
+  border-radius:9px 9px 0 0; margin-bottom:-1px; padding-bottom:1px; z-index:2;
+}
+/* B. 테두리형: 몸통은 카드색, 그룹색 테두리로 감싸기 */
+.grpband-outline.padTabs.rowsMode{
+  --pgband:var(--card);
+  --pgbandbr:color-mix(in srgb, var(--pgc) 55%, transparent);
+}
+.grpband-outline.rowsMode .padTabRow{border-width:2px}
+.grpband-outline.rowsMode .pgchip.active{border-width:2px; margin-bottom:-2px; padding-bottom:2px}
+/* C. 지시선형: 왼쪽 굵은 그룹색 지시선 + 아주 연한 채움 */
+.grpband-bar.padTabs.rowsMode{
+  --pgband:color-mix(in srgb, var(--pgc) 4%, var(--card));
+  --pgbandbr:color-mix(in srgb, var(--pgc) 20%, var(--line));
+}
+.grpband-bar.rowsMode .padTabRow{
+  border-left:3px solid color-mix(in srgb, var(--pgc) 70%, transparent);
+  border-top-left-radius:4px; border-bottom-left-radius:4px;
+}
+.rowsMode .padTabRow{
+  background:var(--pgband); border:1px solid var(--pgbandbr);
+  border-radius:12px; border-top-left-radius:4px; padding:7px 7px 0;
+}
+.rowsMode .pgchip.active.float{border-radius:9px; border-bottom-color:var(--pgbandbr); margin-bottom:0; padding-bottom:0}
+.padstyle-file .padTabs.rowsMode{margin-bottom:6px; padding:2px 0 0}
+.padTabRow{display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; align-items:flex-end; padding-top:1px}
+.padTabRow::-webkit-scrollbar{display:none}
+#dlgPadGrp{width:min(320px, calc(100vw - 24px))}
+#dlgAsk{width:min(360px, calc(100vw - 32px))}
+#dlgPadGrp .grow{display:flex; align-items:center; gap:6px; width:100%; padding:11px 14px; border-bottom:1px solid var(--line); font-size:13.5px; font-weight:700; text-align:left}
+#dlgPadGrp .grow:hover{background:color-mix(in srgb, var(--text) 5%, transparent)}
+#dlgPadGrp .grow .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+#dlgPadGrp .grow .ed{color:var(--muted); font-size:12px; padding:4px 6px; border-radius:7px}
+#dlgPadGrp .grow .ed:hover{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text)}
 .padBtn.strike{width:34px; justify-content:center; padding:0; font-weight:800; text-decoration:line-through}
 #padText.paper{
   background-color:color-mix(in srgb, #f59e0b 5%, var(--card));
@@ -545,6 +621,56 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
   <button class="mitem" id="miClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>닫기</button>
 </dialog>
 
+<!-- 메모 탭 설정 -->
+<dialog id="dlgPad">
+  <form method="dialog" class="dbody" id="formPad">
+    <h3>메모 탭 설정</h3>
+    <div class="field"><label>이름</label><input type="text" id="pName" maxlength="20" required></div>
+    <div class="field"><label>그룹</label><select id="pGroup"></select>
+      <p class="dhint">같은 그룹의 메모 탭은 이름 순(오름차순)으로 자동 정렬됩니다.</p></div>
+    <div class="field"><label>탭 색상 (자동 = 기본 배정색)</label><div class="swatches" id="pSwatches"></div></div>
+    <div class="drow">
+      <button type="button" class="btn ghost" id="pCancel">취소</button>
+      <button type="submit" class="btn" id="pSave">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 메모 그룹 설정 -->
+<dialog id="dlgPGrp">
+  <form method="dialog" class="dbody" id="formPGrp">
+    <h3 id="pgTitle">메모 그룹 설정</h3>
+    <div class="field"><label>이름</label><input type="text" id="gpName" maxlength="20" required></div>
+    <div class="field"><label>그룹 색상 (자동 = 기본 배정색)</label><div class="swatches" id="gpSwatches"></div>
+      <p class="dhint">그룹 글자색이 되고, 하위 메모탭을 감싸는 밴드는 이 색의 연한 톤으로 자동 조정됩니다.</p></div>
+    <div class="drow">
+      <button type="button" class="btn danger hidden" id="gpDelete">삭제</button>
+      <button type="button" class="btn ghost" id="gpCancel">취소</button>
+      <button type="submit" class="btn" id="gpSave">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 공용 입력/확인 창: 브라우저 prompt/confirm 대체 (앱 미리보기·샌드박스에서도 동작) -->
+<dialog id="dlgAsk">
+  <form method="dialog" class="dbody" id="formAsk">
+    <h3 id="askTitle">확인</h3>
+    <p class="dhint" id="askMsg" style="margin:0 0 13px; white-space:pre-line"></p>
+    <div class="field" id="askField"><input type="text" id="askInput" maxlength="20" autocomplete="off"></div>
+    <div class="drow">
+      <button type="button" class="btn ghost" id="askCancel">취소</button>
+      <button type="button" class="btn danger hidden" id="askDel">삭제</button>
+      <button type="submit" class="btn" id="askOk">확인</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 메모 그룹 선택(드롭다운형) -->
+<dialog id="dlgPadGrp" class="menu">
+  <div class="mhead"><div class="em">📂 메모 그룹</div><div class="sub">누르면 이동 · ✏로 이름 변경/삭제</div></div>
+  <div id="pgList"></div>
+</dialog>
+
 <input type="file" id="importFile" accept=".json,application/json" class="hidden">
 <div id="toast"></div>
 
@@ -578,7 +704,7 @@ const EMBEDDED_FIREBASE_CONFIG = {
 
 const SDK = "12.15.0"; // Firebase JS SDK 버전 (고정)
 const COLORS = ["#4f6ef7","#8b5cf6","#ec4899","#e5484d","#f59e0b","#18a058","#06b6d4","#64748b"];
-const CFG_KEY = "bmh_cfg", THEME_KEY = "bmh_theme", LAYOUT_KEY = "bmh_layout", TAB_KEY = "bmh_tab", OPEN_KEY = "bmh_open";
+const CFG_KEY = "bmh_cfg", THEME_KEY = "bmh_theme", LAYOUT_KEY = "bmh_layout", TAB_KEY = "bmh_tab", OPEN_KEY = "bmh_open", RECENT_N_KEY = "bmh_recentn";
 const MAX_DEPTH = 3;            // 그룹 계층 최대 3단계
 const DEFAULT_LAYOUT = "v";     // 기본 그룹 탭: 'v' 세로 | 'h' 가로(드릴다운)
 const V_ACCORDION = true;      // 세로 탭 아코디언 모드(한 갈래만 펼침)
@@ -648,7 +774,9 @@ $("#laySeg").addEventListener("click", e=>{
 const state = {
   mode: null,          // 'demo' | 'live'
   data: { groups: [] },
-  pads: [],            // [{id, name, text, html, updatedAt}]
+  pads: [],            // [{id, name, text, html, color, gid, updatedAt}]
+  padGroups: [],       // [{id, name, updatedAt}]  상위 메모 그룹
+  padGroupSel: null,   // 빈 그룹을 보고 있을 때의 선택 상태(null이면 활성 탭을 따름)
   padActive: null,
   memoPending: false,
   user: null,
@@ -783,7 +911,8 @@ function faviconEl(link, color){
   box.appendChild(img);
   return box;
 }
-function chipEl(link, group){
+let dragLink = null;
+function chipEl(link, group, sub){
   const isEdit = state.editMode;
   const chip = isEdit ? el("div","chip") : document.createElement("a");
   if(!isEdit){
@@ -793,10 +922,51 @@ function chipEl(link, group){
     chip.role = "button"; chip.tabIndex = 0;
     chip.addEventListener("click", ()=>openLinkDlg(group.id, link.id));
   }
+  if(isEdit && !sub){
+    /* 편집 모드: 같은 그룹 안에서 드래그 앤 드롭으로 순서 이동 */
+    chip.draggable = true;
+    chip.addEventListener("dragstart", e=>{
+      dragLink = { gid: group.id, lid: link.id };
+      chip.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try{ e.dataTransfer.setData("text/plain", link.id); }catch(_){}
+    });
+    chip.addEventListener("dragend", ()=>{
+      dragLink = null;
+      document.querySelectorAll(".chip.dragging,.chip.dropL,.chip.dropR").forEach(c=>c.classList.remove("dragging","dropL","dropR"));
+      document.querySelectorAll(".addlink.dropIn").forEach(c=>c.classList.remove("dropIn"));
+    });
+    chip.addEventListener("dragover", e=>{
+      if(!dragLink || dragLink.gid !== group.id || dragLink.lid === link.id) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
+      const r = chip.getBoundingClientRect();
+      const before = (e.clientX - r.left) < r.width / 2;
+      chip.classList.toggle("dropL", before);
+      chip.classList.toggle("dropR", !before);
+    });
+    chip.addEventListener("dragleave", ()=>chip.classList.remove("dropL","dropR"));
+    chip.addEventListener("drop", e=>{
+      chip.classList.remove("dropL","dropR");
+      if(!dragLink || dragLink.gid !== group.id || dragLink.lid === link.id) return;
+      e.preventDefault();
+      const r = chip.getBoundingClientRect();
+      const before = (e.clientX - r.left) < r.width / 2;
+      const g = findGroup(group.id); if(!g) return;
+      const from = g.links.findIndex(x=>x.id === dragLink.lid);
+      if(from < 0) return;
+      const [mv] = g.links.splice(from, 1);
+      let to = g.links.findIndex(x=>x.id === link.id);
+      if(to < 0){ g.links.splice(from, 0, mv); return; }
+      if(!before) to++;
+      g.links.splice(to, 0, mv);
+      dragLink = null;
+      persist();
+    });
+  }
   chip.appendChild(faviconEl(link, group.color));
   const meta = el("span","meta");
   meta.appendChild(el("span","t", link.title || hostOf(link.url)));
-  meta.appendChild(el("span","m", link.memo || hostOf(link.url)));
+  meta.appendChild(el("span","m", sub || link.memo || hostOf(link.url)));
   chip.appendChild(meta);
   if(isEdit){
     const badge = el("span","editbadge");
@@ -839,6 +1009,23 @@ function groupEl(g, visLinks, arrows, hideHead, label){
   const add = el("button","addlink");
   add.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 북마크 추가';
   add.addEventListener("click", ()=>openLinkDlg(g.id, null));
+  add.addEventListener("dragover", e=>{
+    if(!dragLink || dragLink.gid !== g.id) return;
+    e.preventDefault(); add.classList.add("dropIn");
+  });
+  add.addEventListener("dragleave", ()=>add.classList.remove("dropIn"));
+  add.addEventListener("drop", e=>{
+    add.classList.remove("dropIn");
+    if(!dragLink || dragLink.gid !== g.id) return;
+    e.preventDefault();
+    const gg = findGroup(g.id); if(!gg) return;
+    const from = gg.links.findIndex(x=>x.id === dragLink.lid);
+    if(from < 0) return;
+    const [mv] = gg.links.splice(from, 1);
+    gg.links.push(mv);
+    dragLink = null;
+    persist();
+  });
   grid.appendChild(add);
   sec.appendChild(grid);
   return sec;
@@ -1025,7 +1212,8 @@ function render(){
       const head = el("div","ghead");
       const dot = el("span","gdot"); dot.style.background = "var(--accent)";
       head.appendChild(dot);
-      head.appendChild(el("span","gname","📝 메모 · " + p.name));
+      const pgn = p.gid ? ((state.padGroups.find(g=>g.id === p.gid) || {}).name || "") : "";
+      head.appendChild(el("span","gname","📝 " + (pgn ? pgn + " › " : "") + p.name));
       sec.appendChild(head);
       const btn = el("button","padSnippet");
       const s0 = Math.max(0, qi - 40), s1 = Math.min(p.text.length, qi + q.length + 70);
@@ -1056,6 +1244,43 @@ function render(){
     shown++;
     box.appendChild(groupEl(single.g, single.g.links, state.layout === "h" ? "lr" : "ud", !state.editMode));
   }else{
+    /* 🕘 최근 추가: 생성 시각이 기록된 북마크를 최신순으로 상단에 표시 */
+    let rn = parseInt(store.get(RECENT_N_KEY) || "10", 10);
+    if(!(rn >= 1 && rn <= 50)) rn = 10;
+    const recent = [];
+    flat.forEach(f=>f.g.links.forEach(l=>{ if(l.created > 0) recent.push({ l, f }); }));
+    recent.sort((a,b)=>b.l.created - a.l.created);
+    if(recent.length){
+      const sec = el("section","gsec");
+      const head = el("div","ghead");
+      const dot = el("span","gdot"); dot.style.background = "linear-gradient(135deg,var(--accent),var(--accent2))";
+      head.appendChild(dot);
+      head.appendChild(el("span","gname","🕘 최근 추가"));
+      head.appendChild(el("span","gcount", String(Math.min(rn, recent.length))));
+      const nlab = el("span","nlab","표시 개수 ");
+      const ninp = document.createElement("input");
+      ninp.type = "number"; ninp.min = "1"; ninp.max = "50"; ninp.value = String(rn);
+      ninp.className = "recentN";
+      ninp.addEventListener("change", ()=>{
+        let v = parseInt(ninp.value, 10);
+        if(!(v >= 1 && v <= 50)) v = 10;
+        store.set(RECENT_N_KEY, String(v));
+        render();
+      });
+      nlab.appendChild(ninp);
+      head.appendChild(nlab);
+      sec.appendChild(head);
+      const grid = el("div","links");
+      const z = n=>String(n).padStart(2,"0");
+      recent.slice(0, rn).forEach(({l, f})=>{
+        const d = new Date(l.created);
+        const sub = f.path.join(" › ") + " · " + (d.getMonth()+1) + "/" + d.getDate() + " " + z(d.getHours()) + ":" + z(d.getMinutes());
+        grid.appendChild(chipEl(l, f.g, sub));
+      });
+      sec.appendChild(grid);
+      box.appendChild(sec);
+      shown++;
+    }
     flat.forEach(f=>{
       shown++;
       box.appendChild(groupEl(f.g, f.g.links, "ud", false, f.path.join(" › ")));
@@ -1162,13 +1387,14 @@ $("#formGroup").addEventListener("submit", e=>{
   const c = $("#content"); if(c) c.scrollTop = 0;
 });
 $("#gCancel").addEventListener("click", ()=>$("#dlgGroup").close());
-$("#gDelete").addEventListener("click", ()=>{
+$("#gDelete").addEventListener("click", async ()=>{
   const g = findGroup(editingGroupId);
   if(!g) return;
   const nl = subCount(g), ng = subGroupCount(g);
   let msg = `'${g.name}' 그룹을 삭제할까요?`;
   if(ng || nl) msg += `\n` + (ng ? `하위 그룹 ${ng}개와 ` : "") + `북마크 ${nl}개가 함께 삭제됩니다.`;
-  if(!confirm(msg)) return;
+  const yes = await uiConfirm("그룹 삭제", msg, { ok:"삭제", danger:true });
+  if(!yes) return;
   const loc = findLoc(editingGroupId);
   if(loc) loc.arr.splice(loc.idx, 1);
   if(state.activeTab !== "all"){
@@ -1225,7 +1451,7 @@ $("#formLink").addEventListener("submit", e=>{
       dest.links.push(l);
     }
   }else{
-    dest.links.push({ id:"l_"+uid(), title, url, memo });
+    dest.links.push({ id:"l_"+uid(), title, url, memo, created: Date.now() });
   }
   $("#dlgLink").close(); persist();
 });
@@ -1259,7 +1485,9 @@ $("#lUrl").addEventListener("blur", ()=>{
 const PAD_FS_KEY = "bmh_padfs", PAD_BG_KEY = "bmh_padbg", PAD_TAB_KEY = "bmh_padtab", PAD_DRAFT_KEY = "bmh_paddraft";
 const PAD_STYLE = "file";        // 메모 탭 모양: 'file' 파일탭형 | 'pill' 알약형 | 'sheet' 시트탭형
 const HR_STYLE = "solid";        // 구분선 모양: 'solid' 실선 | 'dashed' 점선 | 'accent' 포인트
-const MAX_PADS = 12;
+const MEMO_GROUP_UI = "rows";
+const GRP_BAND_STYLE = "bar";     // 밴드 표현: "fill"(채움) | "outline"(테두리) | "bar"(지시선)    // 메모 그룹 표시: 'rows' 2줄형 | 'drop' 드롭다운형 | 'inline' 한줄형
+const MAX_PADS = 100;
 let memoTimer = null, padBuilt = false, padEl = null;
 let memoDirty = false;           // 아직 서버에 저장 안 된 '실제 수정'이 있는가
 let memoServerSynced = false;    // 이 세션에서 서버(캐시 아님) 스냅샷을 받았는가
@@ -1287,7 +1515,7 @@ function applyPadPrefs(){
   const bgLab = $("#padBgLab"); if(bgLab) bgLab.textContent = padBg === "paper" ? "줄노트" : "화이트";
 }
 /* ---- 패드 목록 관리 ---- */
-function normalizePads(d){
+function normalizeMemo(d){
   let pads = [];
   if(d && Array.isArray(d.pads)){
     pads = d.pads.map(p=>{
@@ -1296,17 +1524,29 @@ function normalizePads(d){
       return { id: typeof p.id === "string" ? p.id : "p_" + uid(),
                name: String(p.name || "메모").slice(0, 20),
                html, text: typeof p.text === "string" ? p.text : htmlToText(html),
+               color: (typeof p.color === "string" && /^#[0-9a-fA-F]{6}$/.test(p.color)) ? p.color : "",
+               gid: typeof p.gid === "string" ? p.gid : "",
                updatedAt: Number(p.updatedAt) || 0 };
     }).filter(Boolean);
   }else if(d && ((typeof d.html === "string" && d.html) || (typeof d.text === "string" && d.text))){
     /* 예전 단일 메모 형식 → '메모 1' 탭으로 자동 이전 */
     const html = d.html ? sanitizePad(d.html) : textToHtml(d.text || "");
-    pads = [{ id: "p_" + uid(), name: "메모 1", html, text: d.text || htmlToText(html), updatedAt: Number(d.updatedAt) || 0 }];
+    pads = [{ id: "p_" + uid(), name: "메모 1", html, text: d.text || htmlToText(html),
+              color: "", gid: "", updatedAt: Number(d.updatedAt) || 0 }];
   }
-  return pads;
+  const groups = (d && Array.isArray(d.groups)) ? d.groups.map(g=>{
+    if(!g || typeof g !== "object") return null;
+    return { id: typeof g.id === "string" ? g.id : "pg_" + uid(),
+             name: String(g.name || "그룹").slice(0, 20),
+             color: (typeof g.color === "string" && /^#[0-9a-fA-F]{6}$/.test(g.color)) ? g.color : "",
+             updatedAt: Number(g.updatedAt) || 0 };
+  }).filter(Boolean) : [];
+  const gids = new Set(groups.map(g=>g.id));
+  pads.forEach(p=>{ if(p.gid && !gids.has(p.gid)) p.gid = ""; });
+  return { pads, groups };
 }
 function ensurePads(){
-  if(!state.pads.length) state.pads.push({ id: "p_" + uid(), name: "메모 1", html: "", text: "", updatedAt: 0 });
+  if(!state.pads.length) state.pads.push({ id: "p_" + uid(), name: "메모 1", html: "", text: "", color: "", gid: "", updatedAt: 0 });
 }
 function curPad(){
   ensurePads();
@@ -1314,8 +1554,12 @@ function curPad(){
   if(!p){ p = state.pads[0]; state.padActive = p.id; }
   return p;
 }
-function padsPayload(){
-  return state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html), updatedAt: p.updatedAt }));
+function memoPayload(){
+  return {
+    pads: state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html),
+                               color: p.color || "", gid: p.gid || "", updatedAt: p.updatedAt })),
+    groups: state.padGroups.map(g=>({ id: g.id, name: g.name, updatedAt: g.updatedAt }))
+  };
 }
 /* 패드별 병합: 같은 id는 updatedAt이 새로운 쪽, 한쪽에만 있으면 유지 (통째 덮어쓰기 금지) */
 function mergePads(server, local){
@@ -1329,6 +1573,142 @@ function mergePads(server, local){
   local.forEach(lp=>{ if(!sIds.has(lp.id)) out.push(lp); });
   return out;
 }
+function mergeGroupsArr(server, local){
+  const sIds = new Set(server.map(g=>g.id));
+  const lMap = new Map(local.map(g=>[g.id, g]));
+  const out = [];
+  server.forEach(sg=>{
+    const lg = lMap.get(sg.id);
+    out.push(lg && (lg.updatedAt||0) >= (sg.updatedAt||0) ? lg : sg);
+  });
+  local.forEach(lg=>{ if(!sIds.has(lg.id)) out.push(lg); });
+  return out;
+}
+/* ---- 메모 그룹 헬퍼 ---- */
+function padGroupsSorted(){
+  return [...state.padGroups].sort((a,b)=>a.name.localeCompare(b.name, "ko", { numeric:true }));
+}
+function padsOf(gid){
+  return state.pads.filter(p=>(p.gid||"") === (gid||""))
+    .sort((a,b)=>a.name.localeCompare(b.name, "ko", { numeric:true }));
+}
+function effPadColor(p){
+  if(p.color) return p.color;
+  let h = 0;
+  for(const c of p.id) h = (h + c.charCodeAt(0)) % COLORS.length;
+  return COLORS[h];
+}
+function effGrpColor(g){
+  if(!g) return "";
+  if(g.color) return g.color;
+  let h = 0;
+  for(const c of g.id) h = (h + c.charCodeAt(0)) % COLORS.length;
+  return COLORS[h];
+}
+function getSelGid(){
+  if(state.padGroupSel !== null) return state.padGroupSel;
+  const p = curPad();
+  return p.gid || "";
+}
+function selectPadGroup(gid){
+  const list = padsOf(gid);
+  if(list.length){
+    state.padGroupSel = null;
+    if(state.padActive !== list[0].id && !list.find(x=>x.id === state.padActive)) switchPad(list[0].id);
+    else renderPadTabs();
+  }else{
+    state.padGroupSel = gid;
+    renderPadTabs();
+  }
+}
+/* 브라우저 prompt/confirm 은 앱 내 미리보기(샌드박스)에서 차단되므로 자체 창으로 대체 */
+let askResolve = null;
+function askOpen(o){
+  return new Promise(res=>{
+    askResolve = res;
+    $("#askTitle").textContent = o.title || "확인";
+    const m = $("#askMsg"); m.textContent = o.msg || ""; m.classList.toggle("hidden", !o.msg);
+    $("#askField").classList.toggle("hidden", !o.input);
+    const inp = $("#askInput"); inp.value = o.value || ""; inp.placeholder = o.placeholder || "";
+    const ok = $("#askOk"); ok.textContent = o.ok || "확인"; ok.classList.toggle("danger", !!o.danger);
+    $("#askDel").classList.toggle("hidden", !o.del);
+    $("#dlgAsk").showModal();
+    if(o.input) setTimeout(()=>{ inp.focus(); inp.select(); }, 40);
+  });
+}
+function askDone(v){ const r = askResolve; askResolve = null; $("#dlgAsk").close(); if(r) r(v); }
+$("#formAsk").addEventListener("submit", e=>{
+  e.preventDefault();
+  askDone($("#askField").classList.contains("hidden") ? true : $("#askInput").value);
+});
+$("#askCancel").addEventListener("click", ()=>askDone(null));
+$("#askDel").addEventListener("click", ()=>askDone("__DEL__"));
+$("#dlgAsk").addEventListener("cancel", ()=>{ const r = askResolve; askResolve = null; if(r) r(null); });
+const uiPrompt = (title, value="", o={}) => askOpen({ ...o, title, value, input:true });
+const uiConfirm = (title, msg="", o={}) => askOpen({ ...o, title, msg }).then(v=>v === true);
+
+let editingGrpId = null, grpPick = "";
+function buildGrpSwatches(){
+  const box = $("#gpSwatches"); box.textContent = "";
+  const mk = (c, label)=>{
+    const b = el("button","sw" + ((grpPick||"") === c ? " sel" : ""));
+    b.type = "button";
+    if(c){ b.style.background = c; }
+    else{
+      b.style.background = "linear-gradient(135deg,#9aa0b4,#d7dbe8)";
+      b.style.fontSize = "9px"; b.style.color = "#fff"; b.style.fontWeight = "800";
+      b.textContent = "자동";
+      b.style.width = "auto"; b.style.padding = "0 8px";
+    }
+    if(label) b.title = label;
+    b.addEventListener("click", ()=>{ grpPick = c; buildGrpSwatches(); });
+    box.appendChild(b);
+  };
+  mk("", "기본 배정색 사용");
+  COLORS.forEach(c=>mk(c));
+}
+function openPadGrpEdit(gid){
+  const g = gid ? state.padGroups.find(x=>x.id === gid) : null;
+  if(gid && !g) return;
+  editingGrpId = gid || null;
+  $("#pgTitle").textContent = g ? "메모 그룹 설정" : "새 메모 그룹";
+  $("#gpName").value = g ? g.name : "";
+  grpPick = g ? (g.color || "") : "";
+  buildGrpSwatches();
+  $("#gpDelete").classList.toggle("hidden", !g);
+  $("#dlgPGrp").showModal();
+  if(!g) setTimeout(()=>$("#gpName").focus(), 40);
+}
+$("#gpCancel").addEventListener("click", ()=>$("#dlgPGrp").close());
+$("#formPGrp").addEventListener("submit", e=>{
+  e.preventDefault();
+  const name = $("#gpName").value.trim().slice(0, 20);
+  if(!name) return;
+  if(editingGrpId){
+    const g = state.padGroups.find(x=>x.id === editingGrpId);
+    if(g){ g.name = name; g.color = grpPick || ""; g.updatedAt = Date.now(); }
+  }else{
+    const g = { id: "pg_" + uid(), name, color: grpPick || "", updatedAt: Date.now() };
+    state.padGroups.push(g);
+    state.padGroupSel = g.id;
+  }
+  $("#dlgPGrp").close();
+  scheduleMemoSave(); renderPadTabs();
+});
+$("#gpDelete").addEventListener("click", async ()=>{
+  const gid = editingGrpId; if(!gid) return;
+  const g = state.padGroups.find(x=>x.id === gid); if(!g) return;
+  const n = padsOf(gid).length;
+  const yes = await uiConfirm("그룹 삭제", `'${g.name}' 그룹을 삭제할까요?` + (n ? `\n안의 메모 탭 ${n}개는 '기본'으로 이동합니다.` : ""), { ok:"삭제", danger:true });
+  if(!yes) return;
+  state.pads.forEach(p=>{ if(p.gid === gid){ p.gid = ""; p.updatedAt = Date.now(); } });
+  state.padGroups = state.padGroups.filter(x=>x.id !== gid);
+  if(state.padGroupSel === gid) state.padGroupSel = "";
+  $("#dlgPGrp").close();
+  scheduleMemoSave(); renderPadTabs(); toast("그룹을 삭제했어요");
+});
+function addPadGroup(){ openPadGrpEdit(null); }
+function editPadGroup(gid){ openPadGrpEdit(gid); }
 /* 커서(캐럿) 위치를 글자 오프셋으로 저장/복원 — 유휴 포커스 상태에서 원격 반영 시 사용 */
 function getCaretOffset(root){
   const sel = getSelection();
@@ -1357,19 +1737,21 @@ function setCaretOffset(root, off){
   const s = getSelection(); s.removeAllRanges(); s.addRange(r);
 }
 /* 수신된 패드 상태를 적용하는 단일 진입점 (실시간 스냅샷 처리) */
-function applyIncomingPads(incoming, fromServer){
+function applyIncomingPads(inc, fromServer){
   const focusedOnPad = padBuilt && document.activeElement === padEl;
   const typingRecently = focusedOnPad && (Date.now() - lastPadInput < TYPING_WINDOW);
   if(memoDirty || typingRecently){
-    state.pads = mergePads(incoming, state.pads);   // 내 미저장 수정 보호
+    state.pads = mergePads(inc.pads, state.pads);               // 내 미저장 수정 보호
+    state.padGroups = mergeGroupsArr(inc.groups, state.padGroups);
   }else{
-    state.pads = incoming;                          // 수정 없으면 최신을 그대로 신뢰
+    state.pads = inc.pads;                                      // 수정 없으면 최신을 그대로 신뢰
+    state.padGroups = inc.groups;
   }
   if(fromServer){
     memoServerSynced = true;
     if(memoDirty && state.mode === "live" && state.fb && state.fb.saveMemo){
       memoDirty = false;
-      state.fb.saveMemo(padsPayload());             // 병합 결과를 서버로
+      state.fb.saveMemo(memoPayload());             // 병합 결과를 서버로
       store.del(PAD_DRAFT_KEY);
     }
   }
@@ -1396,8 +1778,9 @@ function loadPadIntoEl(){
   applyPadPrefs();
 }
 function switchPad(id){
-  if(id === state.padActive) return;
+  if(id === state.padActive){ state.padGroupSel = null; renderPadTabs(); return; }
   flushMemo();
+  state.padGroupSel = null;
   state.padActive = id; store.set(PAD_TAB_KEY, id);
   loadPadIntoEl();
   renderPadTabs(); updatePadMeta();
@@ -1407,45 +1790,208 @@ function addPad(){
   if(state.pads.length >= MAX_PADS){ toast("메모 탭은 최대 " + MAX_PADS + "개까지예요"); return; }
   const names = new Set(state.pads.map(p=>p.name));
   let n = 1; while(names.has("메모 " + n)) n++;
-  const p = { id: "p_" + uid(), name: "메모 " + n, html: "", text: "", updatedAt: Date.now() };
+  const p = { id: "p_" + uid(), name: "메모 " + n, html: "", text: "", color: "", gid: getSelGid(), updatedAt: Date.now() };
   state.pads.push(p);
+  state.padGroupSel = null;
   state.padActive = p.id; store.set(PAD_TAB_KEY, p.id);
   loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave();
   setTimeout(()=>padEl.focus(), 60);
 }
-function delPad(id){
+async function delPad(id){
   const p = state.pads.find(x=>x.id === id); if(!p) return;
   const n = p.text.trim().length;
-  if(!confirm(`'${p.name}' 메모 탭을 삭제할까요?` + (n ? `\n(내용 ${n.toLocaleString()}자도 함께 삭제됩니다)` : ""))) return;
+  const yes = await uiConfirm("메모 탭 삭제", `'${p.name}' 메모 탭을 삭제할까요?` + (n ? `\n내용 ${n.toLocaleString()}자도 함께 삭제됩니다.` : ""), { ok:"삭제", danger:true });
+  if(!yes) return;
   state.pads = state.pads.filter(x=>x.id !== id);
   ensurePads();
   if(state.padActive === id){ state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive); }
   loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(); toast("메모 탭을 삭제했어요");
 }
-function renamePad(){
-  const p = curPad();
-  const nm = prompt("메모 탭 이름", p.name);
-  if(nm === null) return;
-  p.name = (nm.trim() || p.name).slice(0, 20);
+let editingPadId = null, padPick = "";
+function buildPadSwatches(){
+  const box = $("#pSwatches"); box.textContent = "";
+  const mk = (c, label)=>{
+    const b = el("button","sw" + ((padPick||"") === c ? " sel" : ""));
+    b.type = "button";
+    if(c){ b.style.background = c; }
+    else{
+      b.style.background = "linear-gradient(135deg,#9aa0b4,#d7dbe8)";
+      b.style.fontSize = "9px"; b.style.color = "#fff"; b.style.fontWeight = "800";
+      b.textContent = "자동";
+      b.style.width = "auto"; b.style.padding = "0 8px";
+    }
+    if(label) b.title = label;
+    b.addEventListener("click", ()=>{ padPick = c; buildPadSwatches(); });
+    box.appendChild(b);
+  };
+  mk("", "기본 배정색 사용");
+  COLORS.forEach(c=>mk(c));
+}
+function fillPadGroupSelect(sel){
+  const g = $("#pGroup"); g.textContent = "";
+  g.add(new Option("기본 (그룹 없음)", ""));
+  padGroupsSorted().forEach(x=>g.add(new Option(x.name, x.id)));
+  g.add(new Option("➕ 새 그룹 만들기…", "__new"));
+  g.value = sel || "";
+  if(g.value !== (sel || "")) g.value = "";
+}
+function openPadDlg(padId){
+  const p = state.pads.find(x=>x.id === padId);
+  if(!p) return;
+  editingPadId = padId;
+  $("#pName").value = p.name;
+  padPick = p.color || "";
+  buildPadSwatches();
+  fillPadGroupSelect(p.gid || "");
+  $("#dlgPad").showModal();
+}
+$("#formPad").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const p = state.pads.find(x=>x.id === editingPadId);
+  if(!p){ $("#dlgPad").close(); return; }
+  const name = $("#pName").value.trim().slice(0, 20);
+  if(name) p.name = name;
+  let gv = $("#pGroup").value;
+  if(gv === "__new"){
+    const nm = await uiPrompt("새 메모 그룹", "", { ok:"만들기", placeholder:"그룹 이름" });
+    if(nm !== null && nm !== "__DEL__" && nm.trim()){
+      const g = { id: "pg_" + uid(), name: nm.trim().slice(0, 20), updatedAt: Date.now() };
+      state.padGroups.push(g);
+      gv = g.id;
+    }else{
+      gv = p.gid || "";
+    }
+  }
+  p.gid = gv || "";
+  p.color = padPick || "";
   p.updatedAt = Date.now();
-  renderPadTabs(); scheduleMemoSave();
+  state.padGroupSel = null;
+  $("#dlgPad").close();
+  scheduleMemoSave(); renderPadTabs(); updatePadMeta();
+});
+$("#pCancel").addEventListener("click", ()=>$("#dlgPad").close());
+function renamePad(){ openPadDlg(state.padActive); }
+/* 드롭다운형: 그룹 목록 다이얼로그 */
+function openPadGrpDlg(){
+  const list = $("#pgList"); list.textContent = "";
+  const mkRow = (gid, name, editable)=>{
+    const row = el("button","grow");
+    const cur = getSelGid() === (gid || "");
+    row.appendChild(el("span","nm", (cur ? "✓ " : "") + name));
+    if(editable){
+      const ed = el("span","ed","✏");
+      ed.title = "이름 변경 / 삭제";
+      ed.addEventListener("click", e=>{ e.stopPropagation(); $("#dlgPadGrp").close(); editPadGroup(gid); });
+      row.appendChild(ed);
+    }
+    row.addEventListener("click", ()=>{ $("#dlgPadGrp").close(); selectPadGroup(gid); });
+    list.appendChild(row);
+  };
+  mkRow("", "기본", false);
+  padGroupsSorted().forEach(g=>mkRow(g.id, g.name, true));
+  const addRow = el("button","grow");
+  addRow.appendChild(el("span","nm","➕ 새 그룹 만들기"));
+  addRow.style.color = "var(--accent)";
+  addRow.addEventListener("click", ()=>{ $("#dlgPadGrp").close(); addPadGroup(); });
+  list.appendChild(addRow);
+  $("#dlgPadGrp").showModal();
+}
+function padTabEl(p){
+  const t = el("button","padTab" + (p.id === state.padActive ? " active" : ""));
+  t.appendChild(el("span","nm", p.name));
+  const c = effPadColor(p);
+  t.style.color = c;
+  if(p.id === state.padActive){
+    t.style.background = `color-mix(in srgb, ${c} 12%, var(--card))`;
+    t.style.borderColor = `color-mix(in srgb, ${c} 45%, transparent)`;
+  }
+  t.title = p.name + " — 더블클릭: 탭 설정(이름·그룹·색상) · 삭제는 [− 탭 삭제]";
+  t.addEventListener("click", ()=>switchPad(p.id));
+  t.addEventListener("dblclick", ()=>openPadDlg(p.id));
+  return t;
+}
+function padAddEl(){
+  const add = el("button","padTab add","＋");
+  add.title = "이 그룹에 새 메모 탭 추가";
+  add.addEventListener("click", addPad);
+  return add;
+}
+function pgChipEl(gid, name, editable){
+  const active = getSelGid() === (gid || "");
+  const b = el("button","pgchip" + (active ? " active" : ""));
+  b.appendChild(el("span","nm", name));
+  if(gid){
+    const gc = effGrpColor(state.padGroups.find(x=>x.id === gid));
+    if(gc) b.style.setProperty("--gc", gc);
+  }
+  b.title = editable ? (active ? name + " — 클릭: 이름·색상 설정" : name + " — 더블클릭: 이름·색상 설정") : name;
+  b.addEventListener("click", ()=>{ if(editable && active) openPadGrpEdit(gid); else selectPadGroup(gid); });
+  if(editable) b.addEventListener("dblclick", ()=>openPadGrpEdit(gid));
+  return b;
 }
 function renderPadTabs(){
   const box = $("#padTabs"); if(!box) return;
   box.textContent = "";
+  box.classList.toggle("rowsMode", MEMO_GROUP_UI === "rows");
+  box.classList.add("grpband-" + GRP_BAND_STYLE);
   ensurePads();
-  state.pads.forEach(p=>{
-    const t = el("button","padTab" + (p.id === state.padActive ? " active" : ""));
-    t.appendChild(el("span","nm", p.name));
-    t.title = p.name + " — 더블클릭: 이름 바꾸기 · 삭제는 도구줄의 [− 탭 삭제]";
-    t.addEventListener("click", ()=>switchPad(p.id));
-    t.addEventListener("dblclick", ()=>{ if(p.id === state.padActive) renamePad(); });
-    box.appendChild(t);
-  });
-  const add = el("button","padTab add","＋");
-  add.title = "새 메모 탭 추가";
-  add.addEventListener("click", addPad);
-  box.appendChild(add);
+  const selGid = getSelGid();
+  const selGrp = selGid ? state.padGroups.find(g=>g.id === selGid) : null;
+  box.style.setProperty("--pgc", selGrp ? effGrpColor(selGrp) : "var(--accent)");
+  if(MEMO_GROUP_UI === "rows"){
+    /* 1줄: 상위 그룹, 2줄: 해당 그룹의 메모 탭 */
+    const gr = el("div","padGroupRow");
+    gr.appendChild(pgChipEl("", "기본", false));
+    padGroupsSorted().forEach(g=>gr.appendChild(pgChipEl(g.id, g.name, true)));
+    const ga = el("button","pgchip add","＋ 그룹");
+    ga.title = "새 메모 그룹 추가";
+    ga.addEventListener("click", addPadGroup);
+    gr.appendChild(ga);
+    box.appendChild(gr);
+    const tr = el("div","padTabRow");
+    padsOf(selGid).forEach(p=>tr.appendChild(padTabEl(p)));
+    tr.appendChild(padAddEl());
+    box.appendChild(tr);
+    /* 그룹칩이 여러 줄로 감기면, 밴드 바로 윗줄의 활성 칩만 병합 모양 유지 */
+    const act = gr.querySelector(".pgchip.active");
+    if(act){
+      const maxTop = Math.max(...[...gr.children].map(c=>c.offsetTop));
+      act.classList.toggle("float", act.offsetTop !== maxTop);
+    }
+  }else if(MEMO_GROUP_UI === "drop"){
+    /* [📂 그룹 ▾] 버튼 + 해당 그룹의 메모 탭 한 줄 */
+    const gb = el("button","pgchip");
+    const gname = selGid ? ((state.padGroups.find(g=>g.id === selGid) || {}).name || "기본") : "기본";
+    gb.appendChild(el("span","nm","📂 " + gname));
+    gb.appendChild(el("span", null, " ▾"));
+    gb.title = "메모 그룹 선택 · 관리";
+    gb.style.alignSelf = "center";
+    gb.addEventListener("click", openPadGrpDlg);
+    box.appendChild(gb);
+    box.appendChild(el("span","padTabSep"));
+    padsOf(selGid).forEach(p=>box.appendChild(padTabEl(p)));
+    box.appendChild(padAddEl());
+  }else{
+    /* inline: 한 줄에 [그룹라벨│탭탭…]을 이어서 표시 */
+    const blocks = [["", "기본", false]];
+    padGroupsSorted().forEach(g=>blocks.push([g.id, g.name, true]));
+    blocks.forEach(([gid, name, editable])=>{
+      const pads = padsOf(gid);
+      const lab = el("button","pgLabel" + (selGid === (gid || "") ? " active" : ""), name);
+      lab.title = editable ? name + " — 클릭: 선택 · 더블클릭: 이름 변경/삭제" : name;
+      lab.addEventListener("click", ()=>selectPadGroup(gid));
+      if(editable) lab.addEventListener("dblclick", ()=>editPadGroup(gid));
+      box.appendChild(lab);
+      pads.forEach(p=>box.appendChild(padTabEl(p)));
+      if(selGid === (gid || "")) box.appendChild(padAddEl());
+      box.appendChild(el("span","padTabSep"));
+    });
+    const ga = el("button","pgchip add","＋ 그룹");
+    ga.style.alignSelf = "center";
+    ga.title = "새 메모 그룹 추가";
+    ga.addEventListener("click", addPadGroup);
+    box.appendChild(ga);
+  }
 }
 /* 저장용 HTML 정제: 굵게(b)·줄바꿈(br)·문단(div)만 남기고 모두 제거 */
 function sanitizePad(html){
@@ -1546,14 +2092,14 @@ function flushMemo(){
     state.memoPending = true; setStatus(); return;
   }
   memoDirty = false;
-  state.fb.saveMemo(padsPayload());
+  state.fb.saveMemo(memoPayload());
   store.del(PAD_DRAFT_KEY);
 }
 /* 화면을 떠날 때: 수정이 있을 때만 저장. 서버 미확인 상태면 서버 대신 이 기기에 초안으로 보관 */
 function memoOnLeave(){
   if(!memoDirty) return;
   if(state.mode === "live" && !memoServerSynced){
-    store.set(PAD_DRAFT_KEY, JSON.stringify({ pads: padsPayload(), ts: Date.now() }));
+    store.set(PAD_DRAFT_KEY, JSON.stringify({ ...memoPayload(), ts: Date.now() }));
     return;
   }
   flushMemo();
@@ -1614,7 +2160,7 @@ function buildPadHost(){
     padEl.focus(); document.execCommand("undo"); syncFromPad();
   }, true);
   /* 탭 이름 바꾸기 · 탭 삭제 */
-  mkBtn("icon","✏ 이름","현재 메모 탭 이름 바꾸기 (탭 더블클릭도 가능)", renamePad);
+  mkBtn("icon","✏ 설정","현재 메모 탭 설정: 이름·그룹·색상 (탭 더블클릭도 가능)", renamePad);
   mkBtn("icon","− 탭 삭제","현재 메모 탭 삭제 (확인창이 한 번 더 물어봐요)", ()=>delPad(state.padActive));
   bar.appendChild(el("span","padSep"));
   /* 전체 복사 (굵게 서식 포함) */
@@ -1638,10 +2184,11 @@ function buildPadHost(){
     }
   });
   /* 비우기 */
-  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> 비우기',"현재 메모 탭 비우기", ()=>{
+  mkBtn(null,'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> 비우기',"현재 메모 탭 비우기", async ()=>{
     const p = curPad();
     if(!p.text.trim()){ padEl.innerHTML = ""; return; }
-    if(!confirm(`'${p.name}' 탭의 내용을 비울까요?\n(되돌릴 수 없어요 — 필요하면 먼저 '전체 복사'나 백업을 해두세요)`)) return;
+    const yes = await uiConfirm("메모 비우기", `'${p.name}' 탭의 내용을 비울까요?\n되돌릴 수 없어요 — 필요하면 먼저 '전체 복사'나 백업을 해두세요.`, { ok:"비우기", danger:true });
+    if(!yes) return;
     padEl.innerHTML = ""; p.html = ""; p.text = ""; p.updatedAt = Date.now();
     updatePadMeta(); scheduleMemoSave(); toast("메모를 비웠어요");
   });
@@ -1649,6 +2196,10 @@ function buildPadHost(){
   bar.appendChild(meta);
   const savedTab = store.get(PAD_TAB_KEY);
   if(savedTab) state.padActive = savedTab;
+  if(MEMO_GROUP_UI === "rows"){
+    let rzT = null;
+    window.addEventListener("resize", ()=>{ clearTimeout(rzT); rzT = setTimeout(()=>{ if(padBuilt) renderPadTabs(); }, 150); });
+  }
   loadPadIntoEl();
   if(PAD_STYLE === "sheet"){
     host.appendChild(bar); host.appendChild(padEl); host.appendChild(tabs);
@@ -1669,6 +2220,7 @@ if(location.hostname === "localhost" || location.hostname === "127.0.0.1"){
     isDirty: ()=>memoDirty,
     setDirty: v=>{ memoDirty = v; },
     isSynced: ()=>memoServerSynced,
+    getGroups: ()=>state.padGroups,
     getCaretOffset, setCaretOffset
   };
 }
@@ -1682,7 +2234,7 @@ $("#qClear").addEventListener("click", ()=>{ $("#q").value = ""; state.query = "
 $("#menuBtn").addEventListener("click", ()=>$("#dlgMenu").showModal());
 $("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());
 $("#miExport").addEventListener("click", ()=>{
-  const payload = { groups: state.data.groups, memo: { pads: padsPayload() } };
+  const payload = { groups: state.data.groups, memo: memoPayload() };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   const d = new Date(), z = n=>String(n).padStart(2,"0");
@@ -1710,7 +2262,8 @@ $("#importFile").addEventListener("change", async e=>{
           links: (Array.isArray(g.links)?g.links:[]).map(l=>{
             const u = normalizeUrl(l && l.url); if(!u) return null;
             return { id: typeof l.id==="string" ? l.id : "l_"+uid(),
-                     title: String(l.title||hostOf(u)).slice(0,40), url: u, memo: String(l.memo||"").slice(0,60) };
+                     title: String(l.title||hostOf(u)).slice(0,40), url: u, memo: String(l.memo||"").slice(0,60),
+                     created: Number(l.created)||0 };
           }).filter(Boolean),
           children: []
         };
@@ -1724,14 +2277,16 @@ $("#importFile").addEventListener("change", async e=>{
     const clean = cleanGroups(groups, 1);
     const cntL = arr=>arr.reduce((a,g)=>a+g.links.length+cntL(g.children),0);
     const cntG = arr=>arr.reduce((a,g)=>a+1+cntG(g.children),0);
-    const memoPads = !Array.isArray(raw) && raw.memo ? normalizePads(raw.memo) : [];
+    const memoInc = !Array.isArray(raw) && raw.memo ? normalizeMemo(raw.memo) : { pads: [], groups: [] };
     let msg = `백업 파일의 그룹 ${cntG(clean)}개 · 북마크 ${cntL(clean)}개`;
-    if(memoPads.length) msg += ` · 메모 탭 ${memoPads.length}개`;
+    if(memoInc.pads.length) msg += ` · 메모 탭 ${memoInc.pads.length}개`;
     msg += `로 현재 내용을 교체할까요?`;
-    if(!confirm(msg)) return;
+    const yes = await uiConfirm("백업 가져오기", msg, { ok:"교체하기" });
+    if(!yes) return;
     state.data = { groups: clean };
-    if(memoPads.length){
-      state.pads = memoPads;
+    if(memoInc.pads.length){
+      state.pads = memoInc.pads;
+      state.padGroups = memoInc.groups;
       state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive);
       if(padBuilt){ loadPadIntoEl(); renderPadTabs(); updatePadMeta(); }
       memoDirty = true;
@@ -1740,8 +2295,9 @@ $("#importFile").addEventListener("change", async e=>{
     persist(); toast("백업을 불러왔어요");
   }catch(err){ toast("올바른 백업 파일이 아니에요"); }
 });
-$("#miReset").addEventListener("click", ()=>{
-  if(!confirm("이 기기에 저장된 연결 설정을 지우고 처음 화면으로 돌아갈까요?\n(북마크 데이터는 지워지지 않습니다)")) return;
+$("#miReset").addEventListener("click", async ()=>{
+  const yes = await uiConfirm("연결 설정 다시 하기", "이 기기에 저장된 연결 설정을 지우고 처음 화면으로 돌아갈까요?\n북마크 데이터는 지워지지 않습니다.", { ok:"초기화", danger:true });
+  if(!yes) return;
   store.del(CFG_KEY); location.reload();
 });
 $("#miLogout").addEventListener("click", async ()=>{
@@ -1841,8 +2397,8 @@ async function startLive(cfg){
           else toast("저장 중 문제가 발생했어요");
         });
     },
-    saveMemo(pads){
-      mod.setDoc(memoRef, { pads, updatedAt: Date.now() })
+    saveMemo(payload){
+      mod.setDoc(memoRef, { pads: payload.pads, groups: payload.groups, updatedAt: Date.now() })
         .catch(err=>{
           state.memoPending = false; setStatus();
           toast("메모 저장 중 문제가 발생했어요");
@@ -1902,13 +2458,14 @@ async function startLive(cfg){
     try{
       const draft = JSON.parse(store.get(PAD_DRAFT_KEY) || "null");
       if(draft && Array.isArray(draft.pads) && draft.pads.length){
-        state.pads = normalizePads({ pads: draft.pads });
+        const nm = normalizeMemo(draft);
+        state.pads = nm.pads; state.padGroups = nm.groups;
         memoDirty = true;
       }
     }catch(e){}
     unsubMemo = mod.onSnapshot(memoRef, { includeMetadataChanges: true }, snap=>{
       const d = snap.exists() ? snap.data() : {};
-      applyIncomingPads(normalizePads(d), !snap.metadata.fromCache);
+      applyIncomingPads(normalizeMemo(d), !snap.metadata.fromCache);
       state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer || memoDirty;
       setStatus();
     }, err=>{
@@ -1942,7 +2499,8 @@ async function startLive(cfg){
     state.mode = "demo";
     state.data = normData(PREVIEW_DATA);
     if(PREVIEW_MEMO){
-      state.pads = normalizePads(Array.isArray(PREVIEW_MEMO) ? { pads: PREVIEW_MEMO } : PREVIEW_MEMO);
+      const nm = normalizeMemo(Array.isArray(PREVIEW_MEMO) ? { pads: PREVIEW_MEMO } : PREVIEW_MEMO);
+      state.pads = nm.pads; state.padGroups = nm.groups;
       if(state.pads.length) state.padActive = state.pads[0].id;
     }
     setBanner(PREVIEW_LABEL || "미리보기 — 변경 내용이 저장되지 않아요");
