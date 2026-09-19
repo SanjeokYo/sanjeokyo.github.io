@@ -352,6 +352,100 @@ header{
 }
 .hero .hint{font-size:12.5px; color:var(--muted); line-height:1.6; margin:10px 0 0}
 .errline{color:var(--danger); font-size:13px; margin-top:10px; min-height:1em}
+/* ---------- v12: 그룹 화면 퀵바 · 메모 구획 · 인라인 편집기 · 2열 · 주별 띠 ---------- */
+.quickbar{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:9px}
+.qbtn{
+  display:flex; align-items:center; justify-content:center; gap:6px; min-height:40px;
+  border:1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius:11px;
+  color:var(--accent); font-weight:800; font-size:12.5px; background:color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.qbtn.memo{color:#b45309; border-color:color-mix(in srgb, #f59e0b 55%, var(--line)); background:color-mix(in srgb, #f59e0b 7%, transparent)}
+.qbtn:active{transform:scale(.99)}
+.qbtn svg{width:14px; height:14px}
+.qbtn .lbl{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.gsec.memoSec{border-color:color-mix(in srgb, #f59e0b 35%, var(--line)); background:color-mix(in srgb, #f59e0b 3%, var(--card))}
+.gsec.memoSec .gdot{background:#f59e0b}
+.memoGrid{display:grid; gap:7px}
+.memoGrid.mg-chip{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+@media (min-width:640px){ .memoGrid.mg-chip{grid-template-columns:repeat(auto-fill,minmax(146px,1fr))} }
+.memoGrid.mg-card{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+@media (min-width:640px){ .memoGrid.mg-card{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))} }
+.memoGrid.mg-list{grid-template-columns:1fr; gap:4px}
+.memochip{text-align:left; font:inherit; color:var(--text); min-width:0; outline:none}
+.memochip:focus-visible{border-color:var(--mc, #f59e0b)}
+.memochip .fav{background:color-mix(in srgb, var(--mc, #f59e0b) 16%, var(--card)); color:var(--mc, #f59e0b)}
+.memochip .fav svg{width:13px; height:13px}
+.memochip.on{border-color:var(--mc, #f59e0b); box-shadow:0 0 0 2px color-mix(in srgb, var(--mc, #f59e0b) 25%, transparent)}
+.memochip .t{color:var(--mc, var(--text))}
+.memoGrid.mg-card .memochip{align-items:flex-start; flex-direction:column; gap:6px; padding:9px 10px; min-height:82px}
+.memoGrid.mg-card .memochip .fav{width:20px; height:20px}
+.memoGrid.mg-card .memochip .meta{width:100%; gap:3px}
+.memoGrid.mg-card .memochip .prev{
+  font-size:11px; color:var(--muted); line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:normal;
+}
+.memoGrid.mg-card .memochip .time{font-size:10px; color:var(--muted); opacity:.8}
+.memoGrid.mg-list .memochip{min-height:36px; padding:5px 9px; gap:8px}
+.memoGrid.mg-list .memochip .fav{width:18px; height:18px}
+.memoGrid.mg-list .memochip .meta{flex:1; flex-direction:row; align-items:baseline; gap:8px}
+.memoGrid.mg-list .memochip .t{flex:none; max-width:45%}
+.memoGrid.mg-list .memochip .m{flex:1}
+.memoGrid.mg-list .memochip .time{flex:none; font-size:10px; color:var(--muted)}
+.memoEmpty{font-size:11.5px; color:var(--muted); padding:6px 2px}
+.memochip.dragging{opacity:.4}
+.memochip.dropL{box-shadow:inset 3px 0 0 #f59e0b}
+.memochip.dropR{box-shadow:inset -3px 0 0 #f59e0b}
+.memoGrid.mg-list .memochip.dropL{box-shadow:inset 0 3px 0 #f59e0b}
+.memoGrid.mg-list .memochip.dropR{box-shadow:inset 0 -3px 0 #f59e0b}
+.addmemo{border-color:color-mix(in srgb, #f59e0b 50%, var(--line)); color:#b45309}
+.addmemo:hover{color:#b45309; border-color:#f59e0b}
+.addmemo.dropIn{border-color:#f59e0b; color:#b45309}
+.inlineSlot{margin-bottom:10px}
+.inlineHead{
+  display:flex; align-items:center; gap:6px; padding:6px 10px; margin-bottom:6px;
+  background:color-mix(in srgb, #f59e0b 9%, var(--card)); border:1px solid color-mix(in srgb, #f59e0b 40%, var(--line));
+  border-radius:11px; font-size:12.5px; font-weight:800;
+}
+.inlineHead .ih-title{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.inlineHead .ih-sp{flex:1}
+.ihbtn{font-size:11.5px; font-weight:800; padding:4px 8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text)}
+.ihbtn.close{color:var(--danger); border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
+.padWrap.inlineMode{flex:none; gap:6px}
+.padWrap.inlineMode #padTabs{display:none}
+.padWrap.inlineMode #padText{flex:none; height:min(45vh, 420px); min-height:180px}
+.padWrap.inlineMode.tall #padText{height:75vh}
+.twoCol{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:12px; align-items:start}
+@media (max-width:720px){ .twoCol{grid-template-columns:1fr; gap:9px} }
+.colHead{display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:800; color:var(--muted); margin-bottom:6px}
+.colHead .gcount{margin-left:2px}
+.colMemo{padding-right:2px}
+@media (min-width:721px){ .colMemo{border-right:1px dashed color-mix(in srgb, var(--line) 80%, transparent); padding-right:12px} }
+.weekBand{border-top:1px dashed var(--line); padding-top:8px; margin-top:8px}
+.ghead + .weekBand{border-top:none; padding-top:0; margin-top:0}
+.weekHead{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:800; margin-bottom:6px}
+.weekHead .wk{color:var(--accent)}
+.weekHead .range{color:var(--muted); font-weight:700}
+.weekHead .cnts{margin-left:auto; font-size:10.5px; color:var(--muted); font-weight:700}
+.weekNone{font-size:11px; color:var(--muted); padding:2px 2px 4px}
+@media (max-width:480px){ .weekHead{flex-wrap:wrap} .weekHead .cnts{margin-left:0; width:100%} .ghead{flex-wrap:wrap} }
+dialog.wide{width:min(860px, calc(100vw - 32px))}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:0 14px}
+@media (max-width:640px){ .grid2{grid-template-columns:1fr} }
+.imgrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.imgprev{
+  width:44px; height:44px; border-radius:10px; border:1.5px solid var(--line); background:var(--bg);
+  display:grid; place-items:center; overflow:hidden; flex:none;
+}
+.imgprev img{width:100%; height:100%; object-fit:cover}
+.imgprev .lt{font-size:16px; font-weight:800; color:#fff; width:100%; height:100%; display:grid; place-items:center}
+.imgPicker{display:flex; gap:6px; overflow-x:auto; padding:3px 2px; scrollbar-width:thin}
+.imgPick{
+  width:46px; height:46px; border-radius:11px; border:2px solid var(--line); overflow:hidden; flex:none; padding:0;
+  background:var(--bg); cursor:pointer; position:relative;
+}
+.imgPick img{width:100%; height:100%; object-fit:cover; display:block}
+.imgPick:hover{border-color:color-mix(in srgb, var(--accent) 60%, var(--line))}
+.imgPick.sel{border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent)}
+.imgPick.sel::after{content:"✓"; position:absolute; right:2px; bottom:1px; font-size:10px; font-weight:900; color:#fff; background:var(--accent); border-radius:6px; padding:0 4px}
 /* ---------- groups ---------- */
 main .wrap{padding-top:12px}
 .gsec{
@@ -543,7 +637,22 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span class="lbl" id="quickAddLabel">북마크 추가</span>
       </button>
+      <div id="quickBar" class="quickbar hidden">
+        <button type="button" class="qbtn memo" id="qbMemo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">메모 추가</span></button>
+        <button type="button" class="qbtn link" id="qbLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">북마크 추가</span></button>
+      </div>
       <div id="subchips" class="subchips hidden"></div>
+      <div id="memoSec" class="hidden"></div>
+      <div id="inlineSlot" class="inlineSlot hidden">
+        <div class="inlineHead">
+          <span class="ih-ico">📝</span>
+          <span class="ih-title" id="ihTitle">메모</span>
+          <span class="ih-sp"></span>
+          <button type="button" class="ihbtn" id="ihSet" title="메모 설정(이름·색·그룹·삭제)">✏ 설정</button>
+          <button type="button" class="ihbtn" id="ihTall" title="편집기 높이 바꾸기">⤢ 크게</button>
+          <button type="button" class="ihbtn close" id="ihClose" title="메모 닫기 (Esc)">✕ 닫기</button>
+        </div>
+      </div>
       <button class="addgroup" id="addGroupTop"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 새 그룹 만들기</button>
       <div id="groups"></div>
       <div id="emptyBox" class="empty hidden">
@@ -576,13 +685,28 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
 </dialog>
 
 <!-- 북마크 편집 -->
-<dialog id="dlgLink">
+<dialog id="dlgLink" class="wide">
   <form method="dialog" class="dbody" id="formLink">
     <h3 id="dlgLinkTitle">북마크 추가</h3>
-    <div class="field"><label>주소 (URL)</label><input type="text" id="lUrl" inputmode="url" placeholder="예: naver.com" required></div>
-    <div class="field"><label>이름</label><input type="text" id="lTitle" maxlength="40" placeholder="비워두면 주소로 자동 입력"></div>
-    <div class="field"><label>그룹</label><select id="lGroup"></select></div>
-    <div class="field"><label>메모 (선택)</label><input type="text" id="lMemo" maxlength="60" placeholder="짧은 설명"></div>
+    <div class="grid2">
+      <div class="field"><label>주소 (URL)</label><input type="text" id="lUrl" inputmode="url" placeholder="예: naver.com" required></div>
+      <div class="field"><label>이름</label><input type="text" id="lTitle" maxlength="40" placeholder="비워두면 주소로 자동 입력"></div>
+      <div class="field"><label>그룹</label><select id="lGroup"></select></div>
+      <div class="field"><label>메모 (선택)</label><input type="text" id="lMemo" maxlength="60" placeholder="짧은 설명"></div>
+    </div>
+    <div class="field"><label>이미지 (선택 — 비우면 사이트 아이콘)</label>
+      <div class="imgrow">
+        <span class="imgprev" id="lImgPrev"></span>
+        <input type="file" id="lImgFile" accept="image/*" class="hidden">
+        <button type="button" class="btn small ghost" id="lImgPick">이미지 선택</button>
+        <button type="button" class="btn small ghost" id="lImgClear">기본 아이콘으로</button>
+        <span class="dhint" id="lImgHint" style="margin:0">정사각 128px로 자동 축소되어 저장됩니다(개당 약 5KB).</span>
+      </div>
+      <div class="imgPickWrap hidden" id="lImgRecentWrap">
+        <div class="dhint" style="margin:8px 0 4px">최근 등록한 이미지에서 선택 <span id="lImgRecentN"></span></div>
+        <div class="imgPicker" id="lImgRecent"></div>
+      </div>
+    </div>
     <div class="field hidden" id="lOrderField"><label>순서</label>
       <div class="orderrow">
         <button type="button" class="btn small ghost" id="lUp">◀ 앞으로</button>
@@ -634,6 +758,24 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
       <button type="button" class="btn danger" id="pDelete">삭제</button>
       <button type="button" class="btn ghost" id="pCancel">취소</button>
       <button type="submit" class="btn" id="pSave">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 그룹 메모 항목(북마크 그룹 안의 메모) 추가·설정 -->
+<dialog id="dlgGMemo" class="wide">
+  <form method="dialog" class="dbody" id="formGMemo">
+    <h3 id="dlgGMemoTitle">메모 추가</h3>
+    <div class="grid2">
+      <div class="field"><label>메모 이름</label><input type="text" id="mName" maxlength="30" placeholder="예: 회의 준비, 참고 링크 정리" required></div>
+      <div class="field"><label>그룹</label><select id="mGroup"></select></div>
+    </div>
+    <div class="field"><label>색상 (자동 = 그룹 색)</label><div class="swatches" id="mSwatches"></div>
+      <p class="dhint">내용은 저장 후 바로 펼쳐지는 스크래치 패드에서 적습니다. 그룹당 최대 100개.</p></div>
+    <div class="drow">
+      <button type="button" class="btn danger hidden" id="mDelete">삭제</button>
+      <button type="button" class="btn ghost" id="mCancel">취소</button>
+      <button type="submit" class="btn" id="mSave">저장</button>
     </div>
   </form>
 </dialog>
@@ -714,6 +856,7 @@ const PREVIEW_DATA = null;      // 미리보기 샘플 데이터(설정 시 저�
 const PREVIEW_LABEL = "";
 const MEMO_STYLE = "tools";     // 메모 스타일: 'plain' 심플 | 'tools' 도구줄 | 'paper' 줄노트
 const PREVIEW_MEMO = null;
+const PREVIEW_IMAGES = null;    // 미리보기용 북마크 이미지 {링크id: dataURL}
 
 /* ---------- 작은 유틸 ---------- */
 const $ = s => document.querySelector(s);
@@ -789,7 +932,10 @@ const state = {
   pending: false,
   online: navigator.onLine,
   fb: null,            // {app, auth, db, mod:{...}}
-  cfgSource: null      // 'embedded' | 'local'
+  cfgSource: null,     // 'embedded' | 'local'
+  images: new Map(),   // linkId → dataURL (북마크 사용자 이미지)
+  imageTimes: new Map(), // linkId → 등록 시각(최근 이미지 선택 정렬용)
+  inlineMemo: null     // 그룹 화면에서 펼쳐 놓은 그룹 메모 id
 };
 
 /* ---------- 계층 데이터 헬퍼 ---------- */
@@ -841,6 +987,13 @@ try{ openSet = new Set(JSON.parse(store.get(OPEN_KEY) || "[]")); }catch(e){}
 function saveOpen(){ store.set(OPEN_KEY, JSON.stringify([...openSet])); }
 /* 탭 선택: 조상 펼침 + 북마크 영역 맨 위로 */
 function selectTab(id){
+  if(state.inlineMemo){
+    const p = state.pads.find(x=>x.id === state.inlineMemo);
+    if(!p || p.bg !== id){
+      flushMemo(); state.inlineMemo = null;
+      if(!p || state.padActive === p.id){ const b = topPads()[0]; if(b){ state.padActive = b.id; if(padBuilt) loadPadIntoEl(); } }
+    }
+  }
   state.activeTab = id; store.set(TAB_KEY, id);
   if(id !== "all"){
     const anc = ancestorsOf(id);
@@ -904,7 +1057,9 @@ function faviconEl(link, color){
   const box = el("span","fav");
   const img = document.createElement("img");
   img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
-  img.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(hostOf(link.url)) + "&sz=64";
+  const custom = state.images.get(link.id);
+  img.src = custom || ("https://www.google.com/s2/favicons?domain=" + encodeURIComponent(hostOf(link.url)) + "&sz=64");
+  if(custom){ img.style.objectFit = "cover"; box.classList.add("custom"); }
   img.onerror = ()=>{
     const lt = el("span","lt",(link.title||"?").trim().charAt(0).toUpperCase());
     lt.style.background = color;
@@ -985,11 +1140,17 @@ function groupEl(g, visLinks, arrows, hideHead, label){
     sec.appendChild(grid0);
     return sec;
   }
+  sec.appendChild(groupHeadEl(g, arrows, label, (g.links||[]).length));
+  const grid = linksGridEl(g, visLinks);
+  sec.appendChild(grid);
+  return sec;
+}
+function groupHeadEl(g, arrows, label, count){
   const head = el("div","ghead");
   const dot = el("span","gdot"); dot.style.background = g.color || COLORS[0];
   head.appendChild(dot);
   head.appendChild(el("span","gname", label || g.name));
-  head.appendChild(el("span","gcount", String((g.links||[]).length)));
+  if(count != null) head.appendChild(el("span","gcount", String(count)));
   const acts = el("div","gactions");
   const mk = (svg, label, fn)=>{
     const b = el("button","iconbtn"); b.title = label; b.setAttribute("aria-label", label);
@@ -1005,7 +1166,9 @@ function groupEl(g, visLinks, arrows, hideHead, label){
   acts.appendChild(mk(nextIcon, arrows === "lr" ? "탭 순서 뒤로" : "아래로", ()=>moveGroup(g.id,1)));
   acts.appendChild(mk('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>',"그룹 수정", ()=>openGroupDlg(g.id)));
   head.appendChild(acts);
-  sec.appendChild(head);
+  return head;
+}
+function linksGridEl(g, visLinks){
   const grid = el("div","links");
   visLinks.forEach(l=>grid.appendChild(chipEl(l, g)));
   const add = el("button","addlink");
@@ -1029,9 +1192,474 @@ function groupEl(g, visLinks, arrows, hideHead, label){
     persist();
   });
   grid.appendChild(add);
+  return grid;
+}
+/* ═══════════ v12: 그룹 메모 항목 · 인라인 편집기 · 이미지 · 주별 최근 ═══════════ */
+const MEMO_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></svg>';
+function memoPreview(p, n){
+  const t = (p.text || "").replace(/─{3,}/g, " · ").replace(/\s+/g, " ").trim();
+  return t ? t.slice(0, n || 60) : "";
+}
+function groupPathOf(gid){ const f = findG(gid); return f ? f.path.join(" › ") : ""; }
+function effMemoColor(p){
+  if(p.color) return p.color;
+  const g = p.bg ? findGroup(p.bg) : null;
+  return (g && g.color) || "#f59e0b";
+}
+let dragMemo = null;
+function memoChipEl(p, g, sub, opts){
+  opts = opts || {};
+  const isEdit = state.editMode;
+  const chip = el("div","chip memochip" + (state.inlineMemo === p.id ? " on" : ""));
+  chip.setAttribute("role","button"); chip.tabIndex = 0;
+  chip.addEventListener("keydown", e=>{ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); chip.click(); } });
+  chip.style.setProperty("--mc", effMemoColor(p));
+  const fav = el("span","fav"); fav.innerHTML = MEMO_ICON;
+  chip.appendChild(fav);
+  const meta = el("span","meta");
+  meta.appendChild(el("span","t", p.name));
+  if(GM_CARD_STYLE === "card" && !sub){
+    meta.appendChild(el("span","prev", memoPreview(p, 90) || "비어 있음"));
+    meta.appendChild(el("span","time", p.updatedAt ? fmtTs(p.updatedAt) : ""));
+  }else{
+    meta.appendChild(el("span","m", sub || memoPreview(p, 60) || "비어 있음"));
+    if(GM_CARD_STYLE === "list" && !sub) meta.appendChild(el("span","time", p.updatedAt ? fmtTs(p.updatedAt) : ""));
+  }
+  chip.appendChild(meta);
+  chip.title = p.name + (isEdit ? " — 클릭: 설정(이름·색·그룹·삭제)" : " — 클릭: 메모 열기");
+  chip.addEventListener("click", ()=>{
+    if(isEdit){ openGMemoDlg(p.bg, p.id); return; }
+    if(state._act !== p.bg) selectTab(p.bg);
+    inlineOpen(p.id);
+  });
+  if(isEdit){
+    const badge = el("span","editbadge");
+    badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+    chip.appendChild(badge);
+  }
+  if(isEdit && opts.dnd){
+    /* 편집 모드: 같은 그룹 안에서 드래그로 순서 이동 */
+    chip.draggable = true;
+    chip.addEventListener("dragstart", e=>{
+      dragMemo = { bg: p.bg, id: p.id };
+      chip.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try{ e.dataTransfer.setData("text/plain", p.id); }catch(_){}
+    });
+    chip.addEventListener("dragend", ()=>{
+      dragMemo = null;
+      document.querySelectorAll(".memochip.dragging,.memochip.dropL,.memochip.dropR").forEach(c=>c.classList.remove("dragging","dropL","dropR"));
+      document.querySelectorAll(".addmemo.dropIn").forEach(c=>c.classList.remove("dropIn"));
+    });
+    const beforeOf = e=>{
+      const r = chip.getBoundingClientRect();
+      return GM_CARD_STYLE === "list" ? (e.clientY - r.top) < r.height / 2 : (e.clientX - r.left) < r.width / 2;
+    };
+    chip.addEventListener("dragover", e=>{
+      if(!dragMemo || dragMemo.bg !== p.bg || dragMemo.id === p.id) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
+      const b = beforeOf(e);
+      chip.classList.toggle("dropL", b); chip.classList.toggle("dropR", !b);
+    });
+    chip.addEventListener("dragleave", ()=>chip.classList.remove("dropL","dropR"));
+    chip.addEventListener("drop", e=>{
+      chip.classList.remove("dropL","dropR");
+      if(!dragMemo || dragMemo.bg !== p.bg || dragMemo.id === p.id) return;
+      e.preventDefault();
+      reorderMemo(p.bg, dragMemo.id, p.id, beforeOf(e));
+      dragMemo = null;
+    });
+  }
+  return chip;
+}
+function reorderMemo(bg, movingId, targetId, before){
+  const list = gmemosOf(bg);
+  const from = list.findIndex(x=>x.id === movingId);
+  if(from < 0) return;
+  const [mv] = list.splice(from, 1);
+  let to = targetId ? list.findIndex(x=>x.id === targetId) : list.length;
+  if(to < 0) to = list.length;
+  if(targetId && !before) to++;
+  list.splice(to, 0, mv);
+  list.forEach((p, i)=>{ p.ord = i; });
+  mv.updatedAt = Date.now();
+  list.forEach(p=>{ p.updatedAt = Math.max(p.updatedAt || 0, mv.updatedAt); });
+  scheduleMemoSave(bg); render();
+}
+function memoAddTile(g){
+  const add = el("button","addlink addmemo");
+  add.type = "button";
+  add.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 메모 추가';
+  add.addEventListener("click", ()=>openGMemoDlg(g.id, null));
+  add.addEventListener("dragover", e=>{ if(!dragMemo || dragMemo.bg !== g.id) return; e.preventDefault(); add.classList.add("dropIn"); });
+  add.addEventListener("dragleave", ()=>add.classList.remove("dropIn"));
+  add.addEventListener("drop", e=>{
+    add.classList.remove("dropIn");
+    if(!dragMemo || dragMemo.bg !== g.id) return;
+    e.preventDefault(); reorderMemo(g.id, dragMemo.id, null, false); dragMemo = null;
+  });
+  return add;
+}
+/* 그룹 화면의 메모 구획 */
+function memoSectionEl(g, memos){
+  const sec = el("section","gsec memoSec");
+  const head = el("div","ghead");
+  head.appendChild(el("span","gdot"));
+  head.appendChild(el("span","gname","📝 메모"));
+  head.appendChild(el("span","gcount", String(memos.length)));
+  sec.appendChild(head);
+  const grid = el("div","memoGrid mg-" + GM_CARD_STYLE);
+  memos.forEach(p=>grid.appendChild(memoChipEl(p, g, null, { dnd:true })));
+  if(state.editMode) grid.appendChild(memoAddTile(g));
+  else if(!memos.length) grid.appendChild(el("div","memoEmpty","아직 메모가 없어요 — 위의 [메모 추가]로 첫 메모를 만드세요"));
   sec.appendChild(grid);
   return sec;
 }
+/* [전체] 화면: 그룹별 좌(메모)/우(북마크) 2열 */
+function groupEl2col(f){
+  const g = f.g;
+  const memos = gmemosOf(g.id);
+  const sec = el("section","gsec");
+  sec.appendChild(groupHeadEl(g, "ud", f.path.join(" › "), null));
+  sec.appendChild(twoColEl(
+    memos.map(p=>memoChipEl(p, g, null, { dnd:true })),
+    g.links.map(l=>chipEl(l, g)),
+    { memoTail: state.editMode ? memoAddTile(g) : null, linkGrid: linksGridEl(g, g.links) }
+  ));
+  return sec;
+}
+function twoColEl(memoChips, linkChips, o){
+  o = o || {};
+  const box = el("div","twoCol");
+  const cm = el("div","colMemo");
+  const hm = el("div","colHead"); hm.appendChild(el("span",null,"📝 메모")); hm.appendChild(el("span","gcount", String(memoChips.length)));
+  cm.appendChild(hm);
+  const gm = el("div","memoGrid mg-" + GM_CARD_STYLE);
+  memoChips.forEach(c=>gm.appendChild(c));
+  if(o.memoTail) gm.appendChild(o.memoTail);
+  else if(!memoChips.length) gm.appendChild(el("div","memoEmpty", o.emptyMemo || "메모 없음"));
+  cm.appendChild(gm);
+  const cl = el("div","colLinks");
+  const hl = el("div","colHead"); hl.appendChild(el("span",null,"🔗 북마크")); hl.appendChild(el("span","gcount", String(linkChips.length)));
+  cl.appendChild(hl);
+  if(o.linkGrid) cl.appendChild(o.linkGrid);
+  else{
+    const gl = el("div","links");
+    linkChips.forEach(c=>gl.appendChild(c));
+    if(!linkChips.length) gl.appendChild(el("div","memoEmpty", o.emptyLink || "북마크 없음"));
+    cl.appendChild(gl);
+  }
+  box.appendChild(cm); box.appendChild(cl);
+  return box;
+}
+/* 주 단위(월요일 시작) 최근 추가 */
+function mondayOf(d){
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const wd = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - wd);
+  return x;
+}
+function weekBands(rw){
+  const now = new Date(), thisMon = mondayOf(now);
+  const wdn = "월화수목금토일";
+  const bands = [];
+  for(let k = 0; k < rw; k++){
+    const start = new Date(thisMon); start.setDate(thisMon.getDate() - 7*k);
+    const end = new Date(start); end.setDate(start.getDate() + 7);
+    const last = new Date(end); last.setDate(end.getDate() - 1);
+    const fmt = d=>`${d.getMonth()+1}/${d.getDate()}(${wdn[(d.getDay()+6)%7]})`;
+    bands.push({ k, start: start.getTime(), end: end.getTime(),
+                 label: k === 0 ? "이번 주" : (k === 1 ? "지난 주" : k + "주 전"),
+                 range: fmt(start) + "–" + fmt(last) });
+  }
+  return bands;
+}
+function recentSectionEl(flat){
+  let rw = parseInt(store.get(RECENT_W_KEY) || "2", 10);
+  if(!(rw >= 1 && rw <= 12)) rw = 2;
+  const sec = el("section","gsec");
+  const head = el("div","ghead");
+  const dot = el("span","gdot"); dot.style.background = "linear-gradient(135deg,var(--accent),var(--accent2))";
+  head.appendChild(dot);
+  head.appendChild(el("span","gname","🕘 최근 추가"));
+  const nlab = el("span","nlab","표시 주 ");
+  const ninp = document.createElement("input");
+  ninp.type = "number"; ninp.min = "1"; ninp.max = "12"; ninp.value = String(rw);
+  ninp.className = "recentN"; ninp.title = "오늘 기준 최근 몇 주까지 보여줄지 (1~12)";
+  ninp.addEventListener("change", ()=>{
+    let v = parseInt(ninp.value, 10);
+    if(!(v >= 1 && v <= 12)) v = 2;
+    store.set(RECENT_W_KEY, String(v)); render();
+  });
+  nlab.appendChild(ninp); nlab.appendChild(el("span",null," 주"));
+  head.appendChild(nlab);
+  sec.appendChild(head);
+  const z = n=>String(n).padStart(2,"0");
+  const stamp = t=>{ const d = new Date(t); return (d.getMonth()+1) + "/" + d.getDate() + " " + z(d.getHours()) + ":" + z(d.getMinutes()); };
+  const links = []; flat.forEach(f=>f.g.links.forEach(l=>{ if(l.created > 0) links.push({ l, f }); }));
+  links.sort((a,b)=>b.l.created - a.l.created);
+  const memos = state.pads.filter(p=>p.created > 0 && !p.grp).sort((a,b)=>b.created - a.created);
+  weekBands(rw).forEach(w=>{
+    const band = el("div","weekBand");
+    const wh = el("div","weekHead");
+    wh.appendChild(el("span","wk", w.label));
+    wh.appendChild(el("span","range", w.range));
+    const ls = links.filter(x=>x.l.created >= w.start && x.l.created < w.end);
+    const ms = memos.filter(p=>p.created >= w.start && p.created < w.end);
+    wh.appendChild(el("span","cnts", `메모 ${ms.length} · 북마크 ${ls.length}`));
+    band.appendChild(wh);
+    if(!ls.length && !ms.length){ band.appendChild(el("div","weekNone","등록 없음")); }
+    else{
+      band.appendChild(twoColEl(
+        ms.map(p=>{
+          const g = p.bg ? findGroup(p.bg) : null;
+          const where = p.bg ? (groupPathOf(p.bg) || "그룹") : "📝 메모";
+          return memoChipEl(p, g || { id:"", color:"#f59e0b" }, where + " · " + stamp(p.created));
+        }),
+        ls.map(({l, f})=>chipEl(l, f.g, f.path.join(" › ") + " · " + stamp(l.created)))
+      ));
+    }
+    sec.appendChild(band);
+  });
+  return sec;
+}
+/* ---- 인라인 편집기(그룹 화면 안에 펼치는 스크래치 패드) ---- */
+let padHostEl = null;
+function placePadHost(where){
+  const host = padHostEl || (padHostEl = $("#padHost"));
+  if(!host) return;
+  const content = $("#content"), slot = $("#inlineSlot");
+  if(where === "inline"){
+    if(host.parentNode !== slot) slot.appendChild(host);
+    host.classList.add("inlineMode");
+  }else{
+    if(host.parentNode !== content) content.insertBefore(host, content.firstChild);
+    host.classList.remove("inlineMode","tall");
+  }
+}
+function inlineOpen(id, focus){
+  const p = state.pads.find(x=>x.id === id);
+  if(!p || !p.bg) return;
+  buildPadHost();
+  if(state.padActive !== id){
+    flushMemo();
+    state.padActive = id;
+    loadPadIntoEl();
+  }
+  state.inlineMemo = id;
+  render();
+  const slot = $("#inlineSlot");
+  if(slot) setTimeout(()=>{ try{ slot.scrollIntoView({ block:"nearest", behavior:"smooth" }); }catch(e){} }, 30);
+  if(focus) setTimeout(()=>{ if(padEl) padEl.focus(); }, 80);
+}
+function inlineClose(){
+  if(!state.inlineMemo) return;
+  flushMemo();
+  state.inlineMemo = null;
+  const saved = store.get(PAD_TAB_KEY);
+  const back = state.pads.find(x=>x.id === saved && !x.bg) || topPads()[0];
+  if(back){ state.padActive = back.id; if(padBuilt) loadPadIntoEl(); }
+  render();
+}
+function updateInlineHead(p, g){
+  const t = $("#ihTitle"); if(!t) return;
+  t.textContent = (g ? g.name + " › " : "") + p.name;
+  const tall = padHostEl && padHostEl.classList.contains("tall");
+  $("#ihTall").textContent = tall ? "⤡ 작게" : "⤢ 크게";
+}
+$("#ihClose").addEventListener("click", inlineClose);
+$("#ihTall").addEventListener("click", ()=>{
+  if(!padHostEl) return;
+  padHostEl.classList.toggle("tall");
+  const p = state.pads.find(x=>x.id === state.inlineMemo);
+  if(p) updateInlineHead(p, findGroup(p.bg));
+});
+$("#ihSet").addEventListener("click", ()=>{ const p = state.pads.find(x=>x.id === state.inlineMemo); if(p) openGMemoDlg(p.bg, p.id); });
+$("#qbMemo").addEventListener("click", ()=>{ const a = state._act; if(a && a !== "all") openGMemoDlg(a, null); });
+$("#qbLink").addEventListener("click", ()=>{ const a = state._act; if(a && a !== "all") openLinkDlg(a, null); });
+/* ---- 그룹 메모 항목 다이얼로그 ---- */
+let editingGMemo = null, gmPick = "";
+function buildGMemoSwatches(){
+  const box = $("#mSwatches"); box.textContent = "";
+  const mk = (c, label)=>{
+    const b = el("button","sw" + ((gmPick||"") === c ? " sel" : ""));
+    b.type = "button";
+    if(c){ b.style.background = c; }
+    else{
+      b.style.background = "linear-gradient(135deg,#9aa0b4,#d7dbe8)";
+      b.style.fontSize = "9px"; b.style.color = "#fff"; b.style.fontWeight = "800";
+      b.textContent = "자동"; b.style.width = "auto"; b.style.padding = "0 8px";
+    }
+    if(label) b.title = label;
+    b.addEventListener("click", ()=>{ gmPick = c; buildGMemoSwatches(); });
+    box.appendChild(b);
+  };
+  mk("", "그룹 색 사용");
+  COLORS.forEach(c=>mk(c));
+}
+function fillGMemoGroupSelect(sel){
+  const s = $("#mGroup"); s.textContent = "";
+  flatGroups().forEach(f=>s.add(new Option("　".repeat(f.depth-1) + f.g.name, f.g.id)));
+  s.value = sel || "";
+  if(s.value !== (sel || "") && s.options.length) s.selectedIndex = 0;
+}
+function openGMemoDlg(gid, padId){
+  if(flatGroups().length === 0){ toast("먼저 그룹을 만들어 주세요"); return; }
+  const p = padId ? state.pads.find(x=>x.id === padId) : null;
+  editingGMemo = p ? p.id : null;
+  $("#dlgGMemoTitle").textContent = p ? "메모 설정" : "메모 추가";
+  $("#mName").value = p ? p.name : "";
+  gmPick = p ? (p.color || "") : "";
+  buildGMemoSwatches();
+  fillGMemoGroupSelect(p ? p.bg : gid);
+  $("#mDelete").classList.toggle("hidden", !p);
+  $("#dlgGMemo").showModal();
+  if(!p) setTimeout(()=>$("#mName").focus(), 60);
+}
+$("#mCancel").addEventListener("click", ()=>$("#dlgGMemo").close());
+$("#formGMemo").addEventListener("submit", e=>{
+  e.preventDefault();
+  const name = $("#mName").value.trim().slice(0, 30);
+  if(!name) return;
+  const bg = $("#mGroup").value;
+  if(!findGroup(bg)) return;
+  if(editingGMemo){
+    const p = state.pads.find(x=>x.id === editingGMemo);
+    if(!p){ $("#dlgGMemo").close(); return; }
+    const oldBg = p.bg;
+    p.name = name; p.color = gmPick || ""; p.updatedAt = Date.now();
+    if(bg !== oldBg){
+      if(gmemosOf(bg).length >= MAX_GMEMO){ toast("그 그룹은 메모가 이미 " + MAX_GMEMO + "개예요"); return; }
+      p.bg = bg;
+      p.ord = Math.min(0, ...gmemosOf(bg).filter(x=>x.id !== p.id).map(x=>x.ord)) - 1;
+      scheduleMemoSave(oldBg);
+      if(state.inlineMemo === p.id && state._act !== bg){ state.inlineMemo = null; }
+    }
+    scheduleMemoSave(bg);
+    $("#dlgGMemo").close(); render();
+  }else{
+    if(gmemosOf(bg).length >= MAX_GMEMO){ toast("그룹당 메모는 최대 " + MAX_GMEMO + "개까지예요"); return; }
+    const ords = gmemosOf(bg).map(x=>x.ord);
+    const p = { id: "n_" + uid(), name, html: "", text: "", color: gmPick || "", gid: "", grp: false,
+                bg, ord: (ords.length ? Math.min(...ords) : 0) - 1, created: Date.now(), updatedAt: Date.now() };
+    state.pads.push(p);
+    scheduleMemoSave(bg);
+    $("#dlgGMemo").close();
+    if(state._act !== bg) selectTab(bg);
+    inlineOpen(p.id, true);
+    toast("메모를 만들었어요 — 내용을 적어 보세요");
+  }
+});
+$("#mDelete").addEventListener("click", async ()=>{
+  const p = state.pads.find(x=>x.id === editingGMemo); if(!p) return;
+  const n = p.text.trim().length;
+  $("#dlgGMemo").close();
+  const yes = await uiConfirm("메모 삭제", `'${p.name}' 메모를 삭제할까요?` + (n ? `\n내용 ${n.toLocaleString()}자도 함께 삭제됩니다.` : ""), { ok:"삭제", danger:true });
+  if(!yes) return;
+  state.pads = state.pads.filter(x=>x.id !== p.id);
+  if(state.inlineMemo === p.id) state.inlineMemo = null;
+  if(state.padActive === p.id){ const b = topPads()[0]; if(b){ state.padActive = b.id; if(padBuilt) loadPadIntoEl(); } }
+  scheduleMemoSave(p.bg); render(); toast("메모를 삭제했어요");
+});
+/* ---- 북마크 이미지 ---- */
+let lImgPending;   // undefined: 변경 없음 | null: 기본 아이콘으로 | string: 새 이미지(dataURL)
+function setImage(id, data, t){
+  state.images.set(id, data);
+  state.imageTimes.set(id, t || Date.now());
+  if(state.mode === "live" && state.fb && state.fb.saveImage) state.fb.saveImage(id, data);
+}
+function delImage(id){
+  if(!state.images.has(id) && !(state.mode === "live")) return;
+  state.images.delete(id); state.imageTimes.delete(id);
+  if(state.mode === "live" && state.fb && state.fb.deleteImage) state.fb.deleteImage(id);
+}
+function imgPreview(link){
+  const box = $("#lImgPrev"); box.textContent = "";
+  const data = lImgPending === undefined ? (link ? state.images.get(link.id) : null) : lImgPending;
+  if(data){
+    const im = document.createElement("img"); im.src = data; box.appendChild(im);
+  }else if(link){
+    const im = document.createElement("img"); im.referrerPolicy = "no-referrer";
+    im.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(hostOf(link.url)) + "&sz=64";
+    im.style.objectFit = "contain"; im.style.width = "26px"; im.style.height = "26px";
+    box.appendChild(im);
+  }else{
+    const lt = el("span","lt","?"); lt.style.background = "var(--line)"; lt.style.color = "var(--muted)"; box.appendChild(lt);
+  }
+}
+function linkTitleOf(id){
+  for(const f of flatGroups()){ const l = f.g.links.find(x=>x.id === id); if(l) return l.title || hostOf(l.url); }
+  return "";
+}
+function renderImgPicker(link){
+  const wrap = $("#lImgRecentWrap"), box = $("#lImgRecent"); if(!wrap || !box) return;
+  box.textContent = "";
+  /* 등록 시각 최신순, 같은 이미지는 한 번만 */
+  const seen = new Set(), items = [];
+  [...state.images.entries()]
+    .map(([id, data])=>({ id, data, t: state.imageTimes.get(id) || 0 }))
+    .sort((a,b)=>b.t - a.t)
+    .forEach(it=>{ if(seen.has(it.data)) return; seen.add(it.data); items.push(it); });
+  const list = items.slice(0, 40);
+  wrap.classList.toggle("hidden", list.length === 0);
+  $("#lImgRecentN").textContent = list.length ? "(" + list.length + "개)" : "";
+  list.forEach(it=>{
+    const b = el("button","imgPick" + (lImgPending === it.data ? " sel" : ""));
+    b.type = "button";
+    const nm = linkTitleOf(it.id);
+    b.title = (nm ? nm + " — " : "") + "이 이미지 사용";
+    const im = document.createElement("img"); im.src = it.data; im.alt = nm;
+    b.appendChild(im);
+    b.addEventListener("click", ()=>{
+      lImgPending = it.data;
+      imgPreview(link);
+      $("#lImgHint").textContent = "최근 이미지" + (nm ? "('" + nm + "')" : "") + "를 선택했어요. 저장하면 이 북마크에도 같은 이미지가 붙습니다.";
+      renderImgPicker(link);
+    });
+    box.appendChild(b);
+  });
+}
+async function resizeImageFile(file){
+  let bmp = null;
+  try{ bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch(e){
+    bmp = await new Promise((res, rej)=>{
+      const u = URL.createObjectURL(file); const im = new Image();
+      im.onload = ()=>{ URL.revokeObjectURL(u); res(im); }; im.onerror = ()=>{ URL.revokeObjectURL(u); rej(new Error("img")); };
+      im.src = u;
+    });
+  }
+  const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight;
+  if(!w || !h) throw new Error("size");
+  const side = Math.min(w, h), sx = (w - side) / 2, sy = (h - side) / 2;   // 가운데 정사각 자르기
+  const c = document.createElement("canvas"); c.width = IMG_SIZE; c.height = IMG_SIZE;
+  const ctx = c.getContext("2d"); ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(bmp, sx, sy, side, side, 0, 0, IMG_SIZE, IMG_SIZE);
+  let out = c.toDataURL("image/webp", 0.86);
+  if(!out.startsWith("data:image/webp")) out = c.toDataURL("image/jpeg", 0.86);
+  if(bmp.close) bmp.close();
+  return out;
+}
+$("#lImgPick").addEventListener("click", ()=>$("#lImgFile").click());
+$("#lImgFile").addEventListener("change", async e=>{
+  const f = e.target.files[0]; e.target.value = "";
+  if(!f) return;
+  try{
+    lImgPending = await resizeImageFile(f);
+    const l = editingLink ? (findGroup(editingLink.gid)||{links:[]}).links.find(x=>x.id === editingLink.lid) : null;
+    imgPreview(l);
+    $("#lImgHint").textContent = "선택한 이미지가 저장됩니다 (" + Math.round(lImgPending.length * 0.75 / 1024) + "KB).";
+    renderImgPicker(l);
+  }catch(err){ toast("이미지를 읽지 못했어요 — 다른 파일을 골라 주세요"); }
+});
+$("#lImgClear").addEventListener("click", ()=>{
+  lImgPending = null;
+  const l = editingLink ? (findGroup(editingLink.gid)||{links:[]}).links.find(x=>x.id === editingLink.lid) : null;
+  imgPreview(l);
+  $("#lImgHint").textContent = "저장하면 사이트 기본 아이콘으로 돌아갑니다.";
+  renderImgPicker(l);
+});
+
 function resolveTab(){
   const act = state.activeTab;
   if(act === "all") return "all";
@@ -1185,43 +1813,63 @@ function render(){
 
   /* 메모(스크래치패드) 화면 */
   const memoActive = !q && act === "__memo";
+  const inlineP = state.inlineMemo ? state.pads.find(p=>p.id === state.inlineMemo) : null;
+  const inlineOn = !!(single && inlineP && inlineP.bg === single.g.id);
   $("#content").classList.toggle("memoMode", memoActive);
-  $("#padHost").classList.toggle("hidden", !memoActive);
+  const hostEl = padHostEl || (padHostEl = $("#padHost"));
+  hostEl.classList.toggle("hidden", !(memoActive || inlineOn));
   if(memoActive){
+    placePadHost("top");
     buildPadHost();
+    if(curPad().bg){ const b = topPads()[0]; state.padActive = b.id; loadPadIntoEl(); }   // 그룹 메모는 📝 탭에 표시하지 않음
     if(document.activeElement !== padEl){
       const p = curPad();
       if(padEl.innerHTML !== p.html) padEl.innerHTML = p.html;
     }
     renderPadTabs();
     updatePadMeta();
+  }else if(inlineOn){
+    buildPadHost();
+    placePadHost("inline");
+    if(state.padActive !== inlineP.id){ state.padActive = inlineP.id; loadPadIntoEl(); }
+    if(document.activeElement !== padEl && padEl.innerHTML !== inlineP.html) padEl.innerHTML = inlineP.html;
+    updateInlineHead(inlineP, single.g);
+    updatePadMeta();
+  }else{
+    placePadHost("top");
   }
+  $("#inlineSlot").classList.toggle("hidden", !inlineOn);
 
-  /* 경로 · 빠른 추가 · 하위 그룹 칩 (그룹 화면에서만) */
+  /* 경로 · 퀵바(메모/북마크 추가) · 하위 그룹 칩 · 메모 구획 (그룹 화면에서만) */
   renderCrumbs(single);
   renderSubchips(single);
-  const qa = $("#quickAdd");
-  qa.classList.toggle("hidden", !single);
-  if(single) $("#quickAddLabel").textContent = `'${single.g.name}'에 북마크 추가`;
+  $("#quickAdd").classList.add("hidden");
+  $("#quickBar").classList.toggle("hidden", !single);
+  const ms = $("#memoSec"); ms.textContent = "";
+  ms.classList.toggle("hidden", !single);
+  if(single) ms.appendChild(memoSectionEl(single.g, gmemosOf(single.g.id)));
 
   if(q){
     /* 메모(모든 탭) 내용 검색 */
     state.pads.forEach(p=>{
-      const qi = p.text.toLowerCase().indexOf(q);
-      if(qi < 0) return;
+      let qi = p.text.toLowerCase().indexOf(q);
+      if(qi < 0 && !(p.name||"").toLowerCase().includes(q)) return;
+      if(qi < 0) qi = 0;
       shown++;
       const sec = el("section","gsec");
       const head = el("div","ghead");
       const dot = el("span","gdot"); dot.style.background = "var(--accent)";
       head.appendChild(dot);
       const pgn = p.gid ? ((state.padGroups.find(g=>g.id === p.gid) || {}).name || "") : "";
-      head.appendChild(el("span","gname","📝 " + (pgn ? pgn + " › " : "") + p.name));
+      head.appendChild(el("span","gname", p.bg ? "📁 " + (groupPathOf(p.bg) || "그룹") + " › " + p.name
+                                                 : "📝 " + (pgn ? pgn + " › " : "") + p.name));
       sec.appendChild(head);
       const btn = el("button","padSnippet");
       const s0 = Math.max(0, qi - 40), s1 = Math.min(p.text.length, qi + q.length + 70);
       btn.textContent = (s0 > 0 ? "… " : "") + p.text.slice(s0, s1).replace(/\s+/g," ") + (s1 < p.text.length ? " …" : "");
       btn.addEventListener("click", ()=>{
         $("#q").value = ""; state.query = "";
+        if(p.bg){ selectTab(p.bg); inlineOpen(p.id); return; }
         state.padActive = p.id; store.set(PAD_TAB_KEY, p.id);
         if(padBuilt) loadPadIntoEl();
         selectTab("__memo");
@@ -1244,48 +1892,24 @@ function render(){
     shown = 1;   /* 메모 화면: 그룹 목록은 렌더링하지 않음(패드가 표시됨) */
   }else if(single){
     shown++;
-    box.appendChild(groupEl(single.g, single.g.links, state.layout === "h" ? "lr" : "ud", !state.editMode));
-  }else{
-    /* 🕘 최근 추가: 생성 시각이 기록된 북마크를 최신순으로 상단에 표시 */
-    let rn = parseInt(store.get(RECENT_N_KEY) || "10", 10);
-    if(!(rn >= 1 && rn <= 50)) rn = 10;
-    const recent = [];
-    flat.forEach(f=>f.g.links.forEach(l=>{ if(l.created > 0) recent.push({ l, f }); }));
-    recent.sort((a,b)=>b.l.created - a.l.created);
-    if(recent.length){
+    if(state.editMode){
+      box.appendChild(groupEl(single.g, single.g.links, state.layout === "h" ? "lr" : "ud", false));
+    }else{
       const sec = el("section","gsec");
       const head = el("div","ghead");
-      const dot = el("span","gdot"); dot.style.background = "linear-gradient(135deg,var(--accent),var(--accent2))";
-      head.appendChild(dot);
-      head.appendChild(el("span","gname","🕘 최근 추가"));
-      head.appendChild(el("span","gcount", String(Math.min(rn, recent.length))));
-      const nlab = el("span","nlab","표시 개수 ");
-      const ninp = document.createElement("input");
-      ninp.type = "number"; ninp.min = "1"; ninp.max = "50"; ninp.value = String(rn);
-      ninp.className = "recentN";
-      ninp.addEventListener("change", ()=>{
-        let v = parseInt(ninp.value, 10);
-        if(!(v >= 1 && v <= 50)) v = 10;
-        store.set(RECENT_N_KEY, String(v));
-        render();
-      });
-      nlab.appendChild(ninp);
-      head.appendChild(nlab);
+      const dot = el("span","gdot"); dot.style.background = single.g.color || COLORS[0];
+      head.appendChild(dot); head.appendChild(el("span","gname","🔗 북마크"));
+      head.appendChild(el("span","gcount", String(single.g.links.length)));
       sec.appendChild(head);
-      const grid = el("div","links");
-      const z = n=>String(n).padStart(2,"0");
-      recent.slice(0, rn).forEach(({l, f})=>{
-        const d = new Date(l.created);
-        const sub = f.path.join(" › ") + " · " + (d.getMonth()+1) + "/" + d.getDate() + " " + z(d.getHours()) + ":" + z(d.getMinutes());
-        grid.appendChild(chipEl(l, f.g, sub));
-      });
-      sec.appendChild(grid);
+      sec.appendChild(linksGridEl(single.g, single.g.links));
       box.appendChild(sec);
-      shown++;
     }
+  }else{
+    /* 🕘 최근 추가(주 단위 띠) + 그룹별 좌(메모)/우(북마크) 2열 */
+    box.appendChild(recentSectionEl(flat)); shown++;
     flat.forEach(f=>{
       shown++;
-      box.appendChild(groupEl(f.g, f.g.links, "ud", false, f.path.join(" › ")));
+      box.appendChild(groupEl2col(f));
     });
   }
   $("#emptyBox").classList.toggle("hidden", !(state.data.groups.length === 0 && !q));
@@ -1393,12 +2017,25 @@ $("#gDelete").addEventListener("click", async ()=>{
   const g = findGroup(editingGroupId);
   if(!g) return;
   const nl = subCount(g), ng = subGroupCount(g);
+  const ids = []; (function walk(x){ ids.push(x.id); x.children.forEach(walk); })(g);
+  const idSet = new Set(ids);
+  const nm = state.pads.filter(p=>idSet.has(p.bg)).length;
   let msg = `'${g.name}' 그룹을 삭제할까요?`;
-  if(ng || nl) msg += `\n` + (ng ? `하위 그룹 ${ng}개와 ` : "") + `북마크 ${nl}개가 함께 삭제됩니다.`;
+  const parts = [];
+  if(ng) parts.push(`하위 그룹 ${ng}개`);
+  if(nl) parts.push(`북마크 ${nl}개`);
+  if(nm) parts.push(`메모 ${nm}개`);
+  if(parts.length) msg += `\n` + parts.join(", ") + `가 함께 삭제됩니다.`;
   const yes = await uiConfirm("그룹 삭제", msg, { ok:"삭제", danger:true });
   if(!yes) return;
   const loc = findLoc(editingGroupId);
   if(loc) loc.arr.splice(loc.idx, 1);
+  state.pads = state.pads.filter(p=>!idSet.has(p.bg));
+  ids.forEach(id=>{ gmDeleted.add(id); gmDirty.delete(id); });
+  (function walkL(x){ x.links.forEach(l=>delImage(l.id)); x.children.forEach(walkL); })(g);
+  if(state.inlineMemo && !state.pads.find(p=>p.id === state.inlineMemo)) state.inlineMemo = null;
+  if(!state.pads.find(p=>p.id === state.padActive)){ const b = topPads()[0]; if(b){ state.padActive = b.id; if(padBuilt) loadPadIntoEl(); } }
+  kickFlush();
   if(state.activeTab !== "all"){
     const f = findG(state.activeTab);
     if(!f) state.activeTab = "all";
@@ -1431,6 +2068,10 @@ function openLinkDlg(gid, lid){
   fillGroupSelect(gid);
   $("#lOrderField").classList.toggle("hidden", !l);
   $("#lDelete").classList.toggle("hidden", !l);
+  lImgPending = undefined;
+  imgPreview(l);
+  $("#lImgHint").textContent = "정사각 128px로 자동 축소되어 저장됩니다(개당 약 5KB).";
+  renderImgPicker(l);
   $("#dlgLink").showModal();
   if(!l) setTimeout(()=>$("#lUrl").focus(), 60);
 }
@@ -1443,6 +2084,7 @@ $("#formLink").addEventListener("submit", e=>{
   const gid = $("#lGroup").value;
   const dest = findGroup(gid);
   if(!dest) return;
+  let lid = null;
   if(editingLink){
     const src = findGroup(editingLink.gid);
     const l = src ? src.links.find(x=>x.id===editingLink.lid) : null;
@@ -1452,9 +2094,14 @@ $("#formLink").addEventListener("submit", e=>{
       src.links = src.links.filter(x=>x.id!==l.id);
       dest.links.push(l);
     }
+    lid = l.id;
   }else{
-    dest.links.push({ id:"l_"+uid(), title, url, memo, created: Date.now() });
+    lid = "l_"+uid();
+    dest.links.push({ id: lid, title, url, memo, created: Date.now() });
   }
+  if(lImgPending === null) delImage(lid);
+  else if(typeof lImgPending === "string") setImage(lid, lImgPending);
+  lImgPending = undefined;
   $("#dlgLink").close(); persist();
 });
 function moveLink(dir){
@@ -1476,6 +2123,7 @@ $("#lDelete").addEventListener("click", ()=>{
   const g = findGroup(editingLink.gid);
   if(!g) return;
   g.links = g.links.filter(x=>x.id!==editingLink.lid);
+  delImage(editingLink.lid);
   $("#dlgLink").close(); persist(); toast("북마크를 삭제했어요");
 });
 $("#lUrl").addEventListener("blur", ()=>{
@@ -1490,9 +2138,16 @@ const HR_STYLE = "solid";        // 구분선 모양: 'solid' 실선 | 'dashed' 
 const MEMO_GROUP_UI = "rows";
 const GRP_BAND_STYLE = "bar";     // 밴드 표현: "fill"(채움) | "outline"(테두리) | "bar"(지시선)    // 메모 그룹 표시: 'rows' 2줄형 | 'drop' 드롭다운형 | 'inline' 한줄형
 const MAX_PADS = 100;
+const MAX_GMEMO = 100;           // 그룹당 메모 최대 개수
+const GM_CARD_STYLE = "card";    // 그룹 메모 항목 모양: "chip" 칩형 | "card" 카드형 | "list" 목록형
+const RECENT_W_KEY = "bmh_recentw";
+const IMG_SIZE = 128;            // 북마크 이미지 저장 크기(px, 정사각)
 let memoTimer = null, padBuilt = false, padEl = null;
-let memoDirty = false;           // 아직 서버에 저장 안 된 '실제 수정'이 있는가
-let memoServerSynced = false;    // 이 세션에서 서버(캐시 아님) 스냅샷을 받았는가
+let memoDirty = false;           // 아직 서버에 저장 안 된 '실제 수정'이 있는가 (최상위 메모 문서)
+let memoServerSynced = false;    // 이 세션에서 서버(캐시 아님) 스냅샷을 받았는가 (최상위)
+let gmDirty = new Set();         // 저장 대기 중인 그룹 메모 샤드(그룹 id)
+let gmDeleted = new Set();       // 삭제 대기 중인 샤드 문서
+let gmServerSynced = false;      // 그룹 메모 샤드 질의의 서버 스냅샷 수신 여부
 let lastPadInput = 0;            // 마지막 입력 시각 — '타이핑 중'과 '커서만 깜빡임'을 구분
 const TYPING_WINDOW = 1500;      // 이 시간(ms) 안에 입력이 있었으면 타이핑 중으로 간주
 let padFs = parseInt(store.get(PAD_FS_KEY) || "14", 10);
@@ -1529,6 +2184,9 @@ function normalizeMemo(d){
                color: (typeof p.color === "string" && /^#[0-9a-fA-F]{6}$/.test(p.color)) ? p.color : "",
                gid: typeof p.gid === "string" ? p.gid : "",
                grp: p.grp === true,
+               bg: typeof p.bg === "string" ? p.bg : "",
+               ord: Number.isFinite(Number(p.ord)) ? Number(p.ord) : 0,
+               created: Number(p.created) || 0,
                updatedAt: Number(p.updatedAt) || 0 };
     }).filter(Boolean);
   }else if(d && ((typeof d.html === "string" && d.html) || (typeof d.text === "string" && d.text))){
@@ -1549,22 +2207,43 @@ function normalizeMemo(d){
   pads.forEach(p=>{ if(p.gid && !gids.has(p.gid)) p.gid = ""; });
   return { pads, groups };
 }
+/* 그룹 메모 샤드(bookmarks/gm_{그룹id}) 문서의 pads 정규화 */
+function normalizeShardPads(arr, bg){
+  const nm = normalizeMemo({ pads: Array.isArray(arr) ? arr : [] });
+  nm.pads.forEach(p=>{ p.bg = bg; p.gid = ""; p.grp = false; });
+  return nm.pads;
+}
+function shardOf(p){ return p && p.bg ? p.bg : ""; }
+function topPads(){ return state.pads.filter(p=>!p.bg); }
+function gmemosOf(bg){
+  return state.pads.filter(p=>p.bg === bg)
+    .sort((a,b)=>(a.ord - b.ord) || ((b.created||0) - (a.created||0)));
+}
 function ensurePads(){
-  if(!state.pads.length) state.pads.push({ id: "p_" + uid(), name: "메모 1", html: "", text: "", color: "", gid: "", updatedAt: 0 });
+  if(!topPads().length) state.pads.push({ id: "p_" + uid(), name: "메모 1", html: "", text: "", color: "", gid: "", bg: "", ord: 0, created: Date.now(), updatedAt: 0 });
 }
 function curPad(){
   ensurePads();
   let p = state.pads.find(x=>x.id === state.padActive);
-  if(!p){ p = state.pads[0]; state.padActive = p.id; }
+  if(!p){ p = topPads()[0]; state.padActive = p.id; }
   return p;
 }
-function memoPayload(){
+function padOut(p){
+  return { id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html),
+           color: p.color || "", gid: p.gid || "", grp: p.grp === true, bg: p.bg || "",
+           ord: Number(p.ord) || 0, created: Number(p.created) || 0, updatedAt: p.updatedAt };
+}
+function memoPayload(){            // 최상위 메모 문서(bookmarks/notes)
   return {
-    pads: state.pads.map(p=>({ id: p.id, name: p.name, text: p.text, html: sanitizePad(p.html),
-                               color: p.color || "", gid: p.gid || "", grp: p.grp === true, updatedAt: p.updatedAt })),
+    pads: topPads().map(padOut),
     groups: state.padGroups.map(g=>({ id: g.id, name: g.name, color: g.color || "", updatedAt: g.updatedAt }))
   };
 }
+function memoPayloadAll(){         // 백업·초안용(그룹 메모 포함)
+  return { pads: state.pads.map(padOut),
+           groups: state.padGroups.map(g=>({ id: g.id, name: g.name, color: g.color || "", updatedAt: g.updatedAt })) };
+}
+function shardPayload(bg){ return { pads: gmemosOf(bg).map(padOut) }; }
 /* 패드별 병합: 같은 id는 updatedAt이 새로운 쪽, 한쪽에만 있으면 유지 (통째 덮어쓰기 금지) */
 function mergePads(server, local){
   const sIds = new Set(server.map(p=>p.id));
@@ -1593,7 +2272,7 @@ function padGroupsSorted(){
   return [...state.padGroups].sort((a,b)=>a.name.localeCompare(b.name, "ko", { numeric:true }));
 }
 function padsOf(gid){
-  return state.pads.filter(p=>!p.grp && (p.gid||"") === (gid||""))
+  return state.pads.filter(p=>!p.grp && !p.bg && (p.gid||"") === (gid||""))
     .sort((a,b)=>a.name.localeCompare(b.name, "ko", { numeric:true }));
 }
 /* 그룹 전용 메모(그룹당 1개, 결정적 id로 기기 간 중복 생성 방지) */
@@ -1601,9 +2280,9 @@ function ensureGrpPad(gid){
   const id = "gm_" + (gid || "");
   let p = state.pads.find(x=>x.id === id);
   if(!p){
-    p = { id, name: "그룹 메모", html: "", text: "", color: "", gid: gid || "", grp: true, updatedAt: Date.now() };
+    p = { id, name: "그룹 메모", html: "", text: "", color: "", gid: gid || "", grp: true, bg: "", ord: 0, created: Date.now(), updatedAt: Date.now() };
     state.pads.push(p);
-    scheduleMemoSave();
+    scheduleMemoSave("");
   }
   return p;
 }
@@ -1653,7 +2332,9 @@ function askOpen(o){
     $("#askField").classList.toggle("hidden", !o.input);
     const inp = $("#askInput"); inp.value = o.value || ""; inp.placeholder = o.placeholder || "";
     const ok = $("#askOk"); ok.textContent = o.ok || "확인"; ok.classList.toggle("danger", !!o.danger);
-    $("#askDel").classList.toggle("hidden", !o.del);
+    const dl = $("#askDel"); dl.classList.toggle("hidden", !o.del);
+    dl.textContent = o.delLabel || "삭제";
+    dl.classList.toggle("danger", !o.delLabel); dl.classList.toggle("ghost", !!o.delLabel);
     $("#dlgAsk").showModal();
     if(o.input) setTimeout(()=>{ inp.focus(); inp.select(); }, 40);
   });
@@ -1718,12 +2399,12 @@ $("#formPGrp").addEventListener("submit", e=>{
     const g = { id: "pg_" + uid(), name, color: grpPick || "", updatedAt: Date.now() };
     state.padGroups.push(g);
     $("#dlgPGrp").close();
-    scheduleMemoSave();
+    scheduleMemoSave("");
     selectPadGroup(g.id);                 // 새 그룹의 그룹 메모를 바로 연다
     return;
   }
   $("#dlgPGrp").close();
-  scheduleMemoSave(); renderPadTabs();
+  scheduleMemoSave(""); renderPadTabs();
 });
 $("#gpDelete").addEventListener("click", async ()=>{
   const gid = editingGrpId; if(!gid) return;
@@ -1741,7 +2422,7 @@ $("#gpDelete").addEventListener("click", async ()=>{
   }
   ensurePads();
   $("#dlgPGrp").close();
-  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(); toast("그룹을 삭제했어요");
+  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(""); toast("그룹을 삭제했어요");
 });
 function addPadGroup(){ openPadGrpEdit(null); }
 function editPadGroup(gid){ openPadGrpEdit(gid); }
@@ -1776,11 +2457,14 @@ function setCaretOffset(root, off){
 function applyIncomingPads(inc, fromServer){
   const focusedOnPad = padBuilt && document.activeElement === padEl;
   const typingRecently = focusedOnPad && (Date.now() - lastPadInput < TYPING_WINDOW);
-  if(memoDirty || typingRecently){
-    state.pads = mergePads(inc.pads, state.pads);               // 내 미저장 수정 보호
+  const keep = state.pads.filter(p=>p.bg);                      // 그룹 메모 항목은 별도 샤드에서 관리
+  const incTop = inc.pads.filter(p=>!p.bg);
+  const typingTop = typingRecently && !shardOf(curPad());
+  if(memoDirty || typingTop){
+    state.pads = [...keep, ...mergePads(incTop, topPads())];    // 내 미저장 수정 보호
     state.padGroups = mergeGroupsArr(inc.groups, state.padGroups);
   }else{
-    state.pads = inc.pads;                                      // 수정 없으면 최신을 그대로 신뢰
+    state.pads = [...keep, ...incTop];                          // 수정 없으면 최신을 그대로 신뢰
     state.padGroups = inc.groups;
   }
   if(fromServer){
@@ -1788,11 +2472,11 @@ function applyIncomingPads(inc, fromServer){
     if(memoDirty && state.mode === "live" && state.fb && state.fb.saveMemo){
       memoDirty = false;
       state.fb.saveMemo(memoPayload());             // 병합 결과를 서버로
-      store.del(PAD_DRAFT_KEY);
+      if(!anyMemoDirty()) store.del(PAD_DRAFT_KEY);
     }
   }
   ensurePads();
-  if(!state.pads.find(p=>p.id === state.padActive)) state.padActive = state.pads[0].id;
+  if(!state.pads.find(p=>p.id === state.padActive)) state.padActive = topPads()[0].id;
   if(padBuilt){
     const p = curPad();
     if(padEl.innerHTML !== p.html && !typingRecently){
@@ -1803,6 +2487,36 @@ function applyIncomingPads(inc, fromServer){
     }
     renderPadTabs(); updatePadMeta();
   }
+}
+/* 그룹 메모 샤드 수신: 해당 그룹의 항목만 병합(다른 그룹·최상위 메모는 그대로) */
+function applyIncomingShard(bg, incPads, fromServer, removed){
+  const focusedOnPad = padBuilt && document.activeElement === padEl;
+  const cur = state.pads.find(x=>x.id === state.padActive);
+  const typingHere = focusedOnPad && cur && cur.bg === bg && (Date.now() - lastPadInput < TYPING_WINDOW);
+  const others = state.pads.filter(p=>p.bg !== bg);
+  const local = state.pads.filter(p=>p.bg === bg);
+  if(removed){
+    state.pads = gmDirty.has(bg) ? state.pads : others;            // 내 미저장 항목이 있으면 유지
+  }else if(gmDirty.has(bg) || typingHere){
+    state.pads = [...others, ...mergePads(incPads, local)];
+  }else{
+    state.pads = [...others, ...incPads];
+  }
+  if(fromServer){
+    gmServerSynced = true;
+    if(gmDirty.size || gmDeleted.size) flushMemo();
+  }
+  if(state.inlineMemo && !state.pads.find(p=>p.id === state.inlineMemo)) state.inlineMemo = null;
+  if(padBuilt && cur && cur.bg === bg){
+    const p = state.pads.find(x=>x.id === state.padActive);
+    if(p && padEl.innerHTML !== p.html && !typingHere){
+      const off = focusedOnPad ? getCaretOffset(padEl) : null;
+      padEl.innerHTML = p.html;
+      if(off !== null) setCaretOffset(padEl, off);
+    }
+    updatePadMeta();
+  }
+  render();
 }
 function loadPadIntoEl(){
   /* 탭마다 새 편집 요소로 교체 → 실행취소 이력이 탭 사이에 섞이지 않음 */
@@ -1823,14 +2537,14 @@ function switchPad(id){
   padEl.scrollTop = 0;
 }
 function addPad(){
-  if(state.pads.length >= MAX_PADS){ toast("메모 탭은 최대 " + MAX_PADS + "개까지예요"); return; }
+  if(topPads().length >= MAX_PADS){ toast("메모 탭은 최대 " + MAX_PADS + "개까지예요"); return; }
   const names = new Set(state.pads.map(p=>p.name));
   let n = 1; while(names.has("메모 " + n)) n++;
-  const p = { id: "p_" + uid(), name: "메모 " + n, html: "", text: "", color: "", gid: getSelGid(), updatedAt: Date.now() };
+  const p = { id: "p_" + uid(), name: "메모 " + n, html: "", text: "", color: "", gid: getSelGid(), bg: "", ord: 0, created: Date.now(), updatedAt: Date.now() };
   state.pads.push(p);
   state.padGroupSel = null;
   state.padActive = p.id; store.set(PAD_TAB_KEY, p.id);
-  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave();
+  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave("");
   setTimeout(()=>padEl.focus(), 60);
 }
 async function delPad(id){
@@ -1851,7 +2565,7 @@ async function delPad(id){
     store.set(PAD_TAB_KEY, state.padActive);
   }
   ensurePads();
-  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(); toast("메모 탭을 삭제했어요");
+  loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(""); toast("메모 탭을 삭제했어요");
 }
 let editingPadId = null, padPick = "";
 function buildPadSwatches(){
@@ -1913,11 +2627,12 @@ $("#formPad").addEventListener("submit", async e=>{
   p.updatedAt = Date.now();
   state.padGroupSel = null;
   $("#dlgPad").close();
-  scheduleMemoSave(); renderPadTabs(); updatePadMeta();
+  scheduleMemoSave(""); renderPadTabs(); updatePadMeta();
 });
 $("#pCancel").addEventListener("click", ()=>$("#dlgPad").close());
 function renamePad(){
   const p = curPad();
+  if(p.bg){ openGMemoDlg(p.bg, p.id); return; }
   if(p.grp){
     if(p.gid) openPadGrpEdit(p.gid);
     else toast("'기본'은 이름·색을 바꿀 수 없어요");
@@ -2127,6 +2842,7 @@ function padPasteHandler(e){
 }
 /* Ctrl/Cmd+B = 굵게, Ctrl/Cmd+Shift+S = 취소선, 기울임·밑줄은 차단 */
 function padKeyHandler(e){
+  if(e.key === "Escape" && padHostEl && padHostEl.classList.contains("inlineMode")){ e.preventDefault(); inlineClose(); return; }
   if(!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
   if(k === "b"){ e.preventDefault(); document.execCommand("bold"); syncFromPad(); }
@@ -2142,36 +2858,50 @@ function updatePadMeta(){
   const m = $("#padMeta");
   if(!m) return;
   const p = curPad();
-  const tag = p.grp ? ((p.gid ? ((state.padGroups.find(g=>g.id === p.gid) || {}).name || "그룹") : "기본") + " 그룹 메모 · ") : "";
+  const tag = p.bg ? (((findGroup(p.bg) || {}).name || "그룹") + " › " + p.name + " · ")
+            : (p.grp ? ((p.gid ? ((state.padGroups.find(g=>g.id === p.gid) || {}).name || "그룹") : "기본") + " 그룹 메모 · ") : "");
   m.textContent = tag + p.text.length.toLocaleString() + "자" + (p.updatedAt ? " · 저장 " + fmtTs(p.updatedAt) : "");
 }
-function scheduleMemoSave(){
-  memoDirty = true;                      // 실제 수정이 있을 때만 이 함수가 불림
+function scheduleMemoSave(shard){
+  /* shard: "" = 최상위 메모 문서, 그룹 id = 그 그룹의 메모 샤드. 생략 시 현재 패드의 소속을 따름 */
+  if(shard === undefined) shard = shardOf(curPad());
+  if(shard) gmDirty.add(shard); else memoDirty = true;
   state.memoPending = true; setStatus();
   clearTimeout(memoTimer);
   memoTimer = setTimeout(flushMemo, 700);
 }
+function anyMemoDirty(){ return memoDirty || gmDirty.size > 0 || gmDeleted.size > 0; }
+function kickFlush(){ state.memoPending = anyMemoDirty(); setStatus(); clearTimeout(memoTimer); memoTimer = setTimeout(flushMemo, 400); }
 function flushMemo(){
   clearTimeout(memoTimer); memoTimer = null;
-  if(!memoDirty){ state.memoPending = false; setStatus(); return; }   // 수정 없으면 절대 쓰지 않음
+  if(!anyMemoDirty()){ state.memoPending = false; setStatus(); return; }   // 수정 없으면 절대 쓰지 않음
   if(state.mode !== "live" || !state.fb || !state.fb.saveMemo){
-    memoDirty = false; state.memoPending = false; setStatus(); return; // 체험/미리보기
+    memoDirty = false; gmDirty.clear(); gmDeleted.clear();
+    state.memoPending = false; setStatus(); return;                        // 체험/미리보기
   }
-  if(!memoServerSynced){
-    /* 서버의 최신 상태를 아직 확인하지 못함(방금 켠 PC 등):
-       과거 캐시로 서버를 덮어쓰면 안 되므로 쓰기를 보류.
-       서버 스냅샷이 도착하면 병합 후 자동 저장됨. */
-    state.memoPending = true; setStatus(); return;
+  /* 서버의 최신 상태를 아직 확인하지 못한 문서는 쓰기를 보류(과거 캐시로 덮어쓰기 방지).
+     서버 스냅샷이 도착하면 병합 후 자동 저장됨. */
+  if(memoDirty && memoServerSynced){
+    memoDirty = false;
+    state.fb.saveMemo(memoPayload());
   }
-  memoDirty = false;
-  state.fb.saveMemo(memoPayload());
-  store.del(PAD_DRAFT_KEY);
+  if((gmDirty.size || gmDeleted.size) && gmServerSynced){
+    gmDeleted.forEach(bg=>{ gmDirty.delete(bg); state.fb.deleteShard(bg); });
+    gmDeleted.clear();
+    gmDirty.forEach(bg=>{
+      const pl = shardPayload(bg);
+      if(pl.pads.length) state.fb.saveShard(bg, pl); else state.fb.deleteShard(bg);
+    });
+    gmDirty.clear();
+  }
+  if(!anyMemoDirty()) store.del(PAD_DRAFT_KEY);
+  state.memoPending = anyMemoDirty(); setStatus();
 }
 /* 화면을 떠날 때: 수정이 있을 때만 저장. 서버 미확인 상태면 서버 대신 이 기기에 초안으로 보관 */
 function memoOnLeave(){
-  if(!memoDirty) return;
-  if(state.mode === "live" && !memoServerSynced){
-    store.set(PAD_DRAFT_KEY, JSON.stringify({ ...memoPayload(), ts: Date.now() }));
+  if(!anyMemoDirty()) return;
+  if(state.mode === "live" && ((memoDirty && !memoServerSynced) || (gmDirty.size && !gmServerSynced))){
+    store.set(PAD_DRAFT_KEY, JSON.stringify({ ...memoPayloadAll(), ts: Date.now() }));
     return;
   }
   flushMemo();
@@ -2293,7 +3023,11 @@ if(location.hostname === "localhost" || location.hostname === "127.0.0.1"){
     setDirty: v=>{ memoDirty = v; },
     isSynced: ()=>memoServerSynced,
     getGroups: ()=>state.padGroups,
-    getCaretOffset, setCaretOffset
+    getCaretOffset, setCaretOffset,
+    applyIncomingShard, gmemosOf, shardPayload,
+    getImages: ()=>state.images, setImage,
+    getState: ()=>state, inlineOpen, inlineClose,
+    dirtyShards: ()=>[...gmDirty], deletedShards: ()=>[...gmDeleted]
   };
 }
 
@@ -2305,8 +3039,18 @@ $("#qClear").addEventListener("click", ()=>{ $("#q").value = ""; state.query = "
 /* ---------- 메뉴 · 백업 ---------- */
 $("#menuBtn").addEventListener("click", ()=>$("#dlgMenu").showModal());
 $("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());
-$("#miExport").addEventListener("click", ()=>{
-  const payload = { groups: state.data.groups, memo: memoPayload() };
+$("#miExport").addEventListener("click", async ()=>{
+  $("#dlgMenu").close();
+  let withImg = false;
+  const nImg = state.images.size;
+  if(nImg){
+    const kb = Math.round([...state.images.values()].reduce((a,v)=>a + v.length * 0.75, 0) / 1024);
+    const r = await askOpen({ title:"백업 내보내기", msg:`북마크 이미지 ${nImg}개(약 ${kb.toLocaleString()}KB)도 백업에 포함할까요?`, ok:"포함", del:true, delLabel:"제외" });
+    if(r === null) return;
+    withImg = (r === true);
+  }
+  const payload = { groups: state.data.groups, memo: memoPayloadAll() };
+  if(withImg) payload.images = Object.fromEntries(state.images);
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   const d = new Date(), z = n=>String(n).padStart(2,"0");
@@ -2350,20 +3094,31 @@ $("#importFile").addEventListener("change", async e=>{
     const cntL = arr=>arr.reduce((a,g)=>a+g.links.length+cntL(g.children),0);
     const cntG = arr=>arr.reduce((a,g)=>a+1+cntG(g.children),0);
     const memoInc = !Array.isArray(raw) && raw.memo ? normalizeMemo(raw.memo) : { pads: [], groups: [] };
+    const imgs = (!Array.isArray(raw) && raw.images && typeof raw.images === "object")
+      ? Object.entries(raw.images).filter(([id, v])=>typeof v === "string" && v.startsWith("data:image/") && v.length < 400000) : [];
     let msg = `백업 파일의 그룹 ${cntG(clean)}개 · 북마크 ${cntL(clean)}개`;
-    if(memoInc.pads.length) msg += ` · 메모 탭 ${memoInc.pads.length}개`;
+    const topN = memoInc.pads.filter(p=>!p.bg).length, gmN = memoInc.pads.length - topN;
+    if(topN) msg += ` · 메모 탭 ${topN}개`;
+    if(gmN) msg += ` · 그룹 메모 ${gmN}개`;
+    if(imgs.length) msg += ` · 이미지 ${imgs.length}개`;
     msg += `로 현재 내용을 교체할까요?`;
     const yes = await uiConfirm("백업 가져오기", msg, { ok:"교체하기" });
     if(!yes) return;
     state.data = { groups: clean };
+    state.inlineMemo = null;
     if(memoInc.pads.length){
+      const oldShards = new Set(state.pads.filter(p=>p.bg).map(p=>p.bg));
       state.pads = memoInc.pads;
       state.padGroups = memoInc.groups;
-      state.padActive = state.pads[0].id; store.set(PAD_TAB_KEY, state.padActive);
+      state.padActive = (topPads()[0] || state.pads[0]).id; store.set(PAD_TAB_KEY, state.padActive);
       if(padBuilt){ loadPadIntoEl(); renderPadTabs(); updatePadMeta(); }
       memoDirty = true;
+      const newShards = new Set(state.pads.filter(p=>p.bg).map(p=>p.bg));
+      newShards.forEach(bg=>gmDirty.add(bg));
+      oldShards.forEach(bg=>{ if(!newShards.has(bg)) gmDeleted.add(bg); });
       flushMemo();
     }
+    imgs.forEach(([id, v])=>setImage(id, v));
     persist(); toast("백업을 불러왔어요");
   }catch(err){ toast("올바른 백업 파일이 아니에요"); }
 });
@@ -2456,7 +3211,11 @@ async function startLive(cfg){
   }catch(e){ db = mod.getFirestore(app); }
   const docRef = mod.doc(db, "bookmarks", "main");
   const memoRef = mod.doc(db, "bookmarks", "notes");
-  let unsub = null, unsubMemo = null;
+  const col = mod.collection(db, "bookmarks");
+  /* 그룹 메모 샤드(gm_*)와 북마크 이미지(img_*)는 문서 id 접두어 범위 질의로 한 번에 구독 */
+  const gmQuery  = mod.query(col, mod.where(mod.documentId(), ">=", "gm_"),  mod.where(mod.documentId(), "<", "gm`"));
+  const imgQuery = mod.query(col, mod.where(mod.documentId(), ">=", "img_"), mod.where(mod.documentId(), "<", "img`"));
+  let unsub = null, unsubMemo = null, unsubGm = null, unsubImg = null;
 
   state.fb = {
     save(data){
@@ -2476,9 +3235,25 @@ async function startLive(cfg){
           toast("메모 저장 중 문제가 발생했어요");
         });
     },
+    saveShard(bg, payload){
+      mod.setDoc(mod.doc(db, "bookmarks", "gm_" + bg), { pads: payload.pads, updatedAt: Date.now() })
+        .catch(()=>{ state.memoPending = false; setStatus(); toast("그룹 메모 저장 중 문제가 발생했어요"); });
+    },
+    deleteShard(bg){
+      mod.deleteDoc(mod.doc(db, "bookmarks", "gm_" + bg)).catch(()=>{});
+    },
+    saveImage(id, data){
+      mod.setDoc(mod.doc(db, "bookmarks", "img_" + id), { data, updatedAt: Date.now() })
+        .catch(()=>toast("이미지 저장 중 문제가 발생했어요"));
+    },
+    deleteImage(id){
+      mod.deleteDoc(mod.doc(db, "bookmarks", "img_" + id)).catch(()=>{});
+    },
     async logout(){
       if(unsub){ unsub(); unsub = null; }
       if(unsubMemo){ unsubMemo(); unsubMemo = null; }
+      if(unsubGm){ unsubGm(); unsubGm = null; }
+      if(unsubImg){ unsubImg(); unsubImg = null; }
       await mod.signOut(auth);
     }
   };
@@ -2516,10 +3291,13 @@ async function startLive(cfg){
     state.user = user;
     if(unsub){ unsub(); unsub = null; }
     if(unsubMemo){ unsubMemo(); unsubMemo = null; }
+    if(unsubGm){ unsubGm(); unsubGm = null; }
+    if(unsubImg){ unsubImg(); unsubImg = null; }
     if(!user){
       state.data = { groups: [] };
-      state.pads = []; state.padActive = null;
+      state.pads = []; state.padActive = null; state.images = new Map(); state.imageTimes = new Map(); state.inlineMemo = null;
       memoDirty = false; memoServerSynced = false;
+      gmDirty.clear(); gmDeleted.clear(); gmServerSynced = false;
       showScreen("login"); setBanner(null);
       $("#loginHint").textContent = "";
       return;
@@ -2533,6 +3311,7 @@ async function startLive(cfg){
         const nm = normalizeMemo(draft);
         state.pads = nm.pads; state.padGroups = nm.groups;
         memoDirty = true;
+        nm.pads.forEach(p=>{ if(p.bg) gmDirty.add(p.bg); });
       }
     }catch(e){}
     unsubMemo = mod.onSnapshot(memoRef, { includeMetadataChanges: true }, snap=>{
@@ -2544,6 +3323,23 @@ async function startLive(cfg){
       if(!String(err && err.code).includes("permission-denied"))
         toast("메모를 불러오지 못했어요");
     });
+    unsubGm = mod.onSnapshot(gmQuery, { includeMetadataChanges: true }, snap=>{
+      const fromServer = !snap.metadata.fromCache;
+      snap.docChanges().forEach(ch=>{
+        const bg = ch.doc.id.slice(3);
+        if(ch.type === "removed") applyIncomingShard(bg, [], fromServer, true);
+        else applyIncomingShard(bg, normalizeShardPads((ch.doc.data()||{}).pads, bg), fromServer, false);
+      });
+      if(fromServer && !gmServerSynced){ gmServerSynced = true; if(gmDirty.size || gmDeleted.size) flushMemo(); }
+      state.memoPending = snap.metadata.hasPendingWrites || !!memoTimer || anyMemoDirty();
+      setStatus();
+    }, err=>{ if(!String(err && err.code).includes("permission-denied")) toast("그룹 메모를 불러오지 못했어요"); });
+    unsubImg = mod.onSnapshot(imgQuery, snap=>{
+      const m = new Map(), tm = new Map();
+      snap.docs.forEach(d=>{ const v = d.data(); if(v && typeof v.data === "string"){ m.set(d.id.slice(4), v.data); tm.set(d.id.slice(4), Number(v.updatedAt) || 0); } });
+      state.images = m; state.imageTimes = tm;
+      render();
+    }, err=>{ if(!String(err && err.code).includes("permission-denied")) toast("이미지를 불러오지 못했어요"); });
     unsub = mod.onSnapshot(docRef, { includeMetadataChanges: true }, snap=>{
       state.data = normData(snap.exists() ? snap.data() : { groups: [] });
       state.pending = snap.metadata.hasPendingWrites;
@@ -2573,7 +3369,11 @@ async function startLive(cfg){
     if(PREVIEW_MEMO){
       const nm = normalizeMemo(Array.isArray(PREVIEW_MEMO) ? { pads: PREVIEW_MEMO } : PREVIEW_MEMO);
       state.pads = nm.pads; state.padGroups = nm.groups;
-      if(state.pads.length) state.padActive = state.pads[0].id;
+      if(state.pads.length) state.padActive = (topPads()[0] || state.pads[0]).id;
+    }
+    if(PREVIEW_IMAGES && typeof PREVIEW_IMAGES === "object"){
+      state.images = new Map(Object.entries(PREVIEW_IMAGES));
+      Object.keys(PREVIEW_IMAGES).forEach((id, i)=>state.imageTimes.set(id, Date.now() - i * 3600000));
     }
     setBanner(PREVIEW_LABEL || "미리보기 — 변경 내용이 저장되지 않아요");
     refreshMenu(); showScreen("app"); render();
