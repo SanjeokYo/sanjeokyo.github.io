@@ -193,6 +193,16 @@ header{
 }
 /* 북마크 드래그 앤 드롭(편집 모드) */
 .chip.dragging{opacity:.4}
+.editmode .links .chip, .editmode .memoGrid .memochip{touch-action:pan-y; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
+.dragGhost{   /* 원래 격자 안에 fixed로 띄운 복제본: 같은 조상 아래 두어 크기·글꼴 규칙을 그대로 물려받음 */
+  position:fixed !important; left:0 !important; top:0 !important; margin:0 !important; z-index:1000 !important;
+  transform:translate(var(--gx,0px), var(--gy,0px)) rotate(1.5deg) !important; opacity:.92 !important;
+  pointer-events:none !important; box-shadow:0 14px 34px -8px rgba(0,0,0,.35) !important; border-color:var(--accent) !important;
+  box-sizing:border-box; grid-area:auto; cursor:grabbing;
+}
+body.sorting{cursor:grabbing}
+body.sorting *{cursor:grabbing !important}
+.editmode .links .chip:not(.dragging), .editmode .memoGrid .memochip:not(.dragging){cursor:grab}
 .chip.dropL{box-shadow:inset 3px 0 0 var(--accent)}
 .chip.dropR{box-shadow:inset -3px 0 0 var(--accent)}
 .addlink.dropIn{border-color:var(--accent); color:var(--accent)}
@@ -1148,7 +1158,117 @@ function faviconEl(link, color){
   box.appendChild(img);
   return box;
 }
-let dragLink = null;
+/* ═══ 편집 모드 드래그 정렬 엔진 (포인터 이벤트) ═══
+   HTML5 drag&drop은 운영체제의 '드래그 세션'을 쓰기 때문에 DLP·보안 에이전트·VDI/원격 브라우저 환경에서
+   가로채이거나 취소되는 경우가 있다. 여기서는 pointerdown/move/up만으로 직접 구현해 그런 영향을 받지 않는다.
+   - 마우스·펜: 6px 이상 움직이면 드래그 시작. 터치: 0.45초 길게 누르면 시작(짧게 밀면 평소처럼 스크롤).
+   - 드래그 중에는 반투명 고스트가 포인터를 따라가고, 같은 그룹 안의 이웃 칩에 앞/뒤 표시, 추가 타일에 놓으면 맨 뒤로. */
+let dragJustEnded = 0;
+function makeSortable(el, o){
+  el.draggable = false;
+  el.querySelectorAll("img").forEach(im=>{ im.draggable = false; });
+  el.addEventListener("dragstart", e=>e.preventDefault());
+  let sx = 0, sy = 0, lx = 0, ly = 0, active = false, armed = false, timer = null, ghost = null, raf = null, pid = null;
+  let target = null, before = false, toEnd = false;
+  const parent = ()=>el.parentNode;
+  const clearMarks = ()=>document.querySelectorAll(".dropL,.dropR,.dropIn").forEach(n=>n.classList.remove("dropL","dropR","dropIn"));
+  const stopTimer = ()=>{ if(timer){ clearTimeout(timer); timer = null; } };
+  const autoScroll = ()=>{
+    if(!active){ raf = null; return; }
+    const c = $("#content"); if(c){
+      const r = c.getBoundingClientRect();
+      if(ly < r.top + 48) c.scrollTop -= 10;
+      else if(ly > r.bottom - 48) c.scrollTop += 10;
+    }
+    raf = requestAnimationFrame(autoScroll);
+  };
+  const begin = (x, y)=>{
+    active = true; el.classList.add("dragging");
+    document.body.classList.add("sorting");
+    const r = el.getBoundingClientRect();
+    ghost = el.cloneNode(true); ghost.className = el.className.replace("dragging","") + " dragGhost";
+    ghost.style.width = r.width + "px"; ghost.style.height = r.height + "px";
+    ghost.style.setProperty("--gx", (r.left) + "px"); ghost.style.setProperty("--gy", (r.top) + "px");
+    ghost.dataset.dx = String(x - r.left); ghost.dataset.dy = String(y - r.top);
+    ghost.removeAttribute("data-sort-id"); ghost.removeAttribute("id"); ghost.setAttribute("aria-hidden","true");
+    (parent() || document.body).appendChild(ghost);   // fixed 배치라 격자 칸을 차지하지 않음
+    try{ el.setPointerCapture(pid); }catch(e){}
+    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+    document.addEventListener("pointerup", docUp); document.addEventListener("pointercancel", docCancel);   // 드래그 중 화면이 다시 그려져도 정리되도록
+    raf = requestAnimationFrame(autoScroll);
+  };
+  const docUp = e=>{ if(e.pointerId === pid) finish(true); };
+  const docCancel = e=>{ if(e.pointerId === pid) finish(false); };
+  const track = (x, y)=>{
+    lx = x; ly = y;
+    if(ghost){
+      ghost.style.setProperty("--gx", (x - parseFloat(ghost.dataset.dx)) + "px");
+      ghost.style.setProperty("--gy", (y - parseFloat(ghost.dataset.dy)) + "px");
+    }
+    clearMarks(); target = null; toEnd = false;
+    const under = document.elementFromPoint(x, y); if(!under) return;
+    const tail = under.closest(o.tailSel);
+    if(tail && tail.parentNode === parent()){ tail.classList.add("dropIn"); toEnd = true; return; }
+    const peer = under.closest(o.peerSel);
+    if(!peer || peer === el || peer.parentNode !== parent()) return;
+    const r = peer.getBoundingClientRect();
+    before = o.vertical ? (y - r.top) < r.height / 2 : (x - r.left) < r.width / 2;
+    peer.classList.toggle("dropL", before); peer.classList.toggle("dropR", !before);
+    target = peer;
+  };
+  const finish = (commit)=>{
+    stopTimer();
+    if(!active){ armed = false; return; }
+    active = false; armed = false;
+    if(raf){ cancelAnimationFrame(raf); raf = null; }
+    el.classList.remove("dragging"); document.body.classList.remove("sorting");
+    if(ghost){ ghost.remove(); ghost = null; }
+    document.querySelectorAll(".dragGhost").forEach(g=>g.remove());
+    clearMarks();
+    document.removeEventListener("pointerup", docUp); document.removeEventListener("pointercancel", docCancel);
+    try{ el.releasePointerCapture(pid); }catch(e){}
+    dragJustEnded = Date.now();
+    if(commit && (toEnd || target)){
+      const tid = target ? (target.dataset.sortId || null) : null;
+      o.onDrop(tid, before, toEnd);
+    }
+    target = null; toEnd = false;
+  };
+  el.addEventListener("pointerdown", e=>{
+    if(!state.editMode || e.button !== 0 || active) return;
+    el.querySelectorAll("img").forEach(im=>{ im.draggable = false; });   // 파비콘 이미지의 기본 드래그 차단
+    pid = e.pointerId; sx = lx = e.clientX; sy = ly = e.clientY;
+    if(e.pointerType === "touch"){
+      armed = false; stopTimer();
+      timer = setTimeout(()=>{ armed = true; begin(lx, ly); track(lx, ly); }, 450);   // 길게 누르면 시작
+    }else{
+      armed = true;
+    }
+  });
+  el.addEventListener("pointermove", e=>{
+    if(e.pointerId !== pid) return;
+    if(active){ e.preventDefault(); track(e.clientX, e.clientY); return; }
+    const moved = Math.hypot(e.clientX - sx, e.clientY - sy);
+    if(e.pointerType === "touch"){ if(moved > 8) stopTimer(); lx = e.clientX; ly = e.clientY; return; }   // 손가락이 움직이면 스크롤로 간주
+    if(armed && moved > 6){ begin(e.clientX, e.clientY); track(e.clientX, e.clientY); }
+  });
+  el.addEventListener("pointerup", e=>{ if(e.pointerId === pid) finish(true); });
+  el.addEventListener("pointercancel", e=>{ if(e.pointerId === pid) finish(false); });
+  el.addEventListener("touchmove", e=>{ if(active) e.preventDefault(); }, { passive:false });
+  el.addEventListener("contextmenu", e=>{ if(active || timer) e.preventDefault(); });   // 길게 누를 때 뜨는 메뉴 억제
+  document.addEventListener("keydown", e=>{ if(e.key === "Escape" && active) finish(false); });
+}
+function reorderLink(gid, movingId, targetId, before, toEnd){
+  const g = findGroup(gid); if(!g) return;
+  const from = g.links.findIndex(x=>x.id === movingId);
+  if(from < 0) return;
+  const [mv] = g.links.splice(from, 1);
+  let to = toEnd || !targetId ? g.links.length : g.links.findIndex(x=>x.id === targetId);
+  if(to < 0) to = g.links.length;
+  else if(targetId && !toEnd && !before) to++;
+  g.links.splice(to, 0, mv);
+  persist();
+}
 function chipEl(link, group, sub){
   const isEdit = state.editMode;
   const chip = isEdit ? el("div","chip") : document.createElement("a");
@@ -1157,49 +1277,16 @@ function chipEl(link, group, sub){
     chip.href = link.url; chip.target = "_blank"; chip.rel = "noopener noreferrer";
   }else{
     chip.role = "button"; chip.tabIndex = 0;
-    chip.addEventListener("click", ()=>openLinkDlg(group.id, link.id));
+    chip.addEventListener("click", ()=>{ if(Date.now() - dragJustEnded < 300) return; openLinkDlg(group.id, link.id); });
   }
   if(isEdit && !sub){
-    /* 편집 모드: 같은 그룹 안에서 드래그 앤 드롭으로 순서 이동 */
-    chip.draggable = true;
-    chip.addEventListener("dragstart", e=>{
-      dragLink = { gid: group.id, lid: link.id };
-      chip.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-      try{ e.dataTransfer.setData("text/plain", link.id); }catch(_){}
-    });
-    chip.addEventListener("dragend", ()=>{
-      dragLink = null;
-      document.querySelectorAll(".chip.dragging,.chip.dropL,.chip.dropR").forEach(c=>c.classList.remove("dragging","dropL","dropR"));
-      document.querySelectorAll(".addlink.dropIn").forEach(c=>c.classList.remove("dropIn"));
-    });
-    chip.addEventListener("dragover", e=>{
-      if(!dragLink || dragLink.gid !== group.id || dragLink.lid === link.id) return;
-      e.preventDefault(); e.dataTransfer.dropEffect = "move";
-      const r = chip.getBoundingClientRect();
-      const before = (e.clientX - r.left) < r.width / 2;
-      chip.classList.toggle("dropL", before);
-      chip.classList.toggle("dropR", !before);
-    });
-    chip.addEventListener("dragleave", ()=>chip.classList.remove("dropL","dropR"));
-    chip.addEventListener("drop", e=>{
-      chip.classList.remove("dropL","dropR");
-      if(!dragLink || dragLink.gid !== group.id || dragLink.lid === link.id) return;
-      e.preventDefault();
-      const r = chip.getBoundingClientRect();
-      const before = (e.clientX - r.left) < r.width / 2;
-      const g = findGroup(group.id); if(!g) return;
-      const from = g.links.findIndex(x=>x.id === dragLink.lid);
-      if(from < 0) return;
-      const [mv] = g.links.splice(from, 1);
-      let to = g.links.findIndex(x=>x.id === link.id);
-      if(to < 0){ g.links.splice(from, 0, mv); return; }
-      if(!before) to++;
-      g.links.splice(to, 0, mv);
-      dragLink = null;
-      persist();
+    /* 편집 모드: 같은 그룹 안에서 드래그로 순서 이동 (포인터 기반 — OS 드래그 세션을 쓰지 않아 보안 도구·원격 환경에서도 동작) */
+    makeSortable(chip, {
+      peerSel: ".links .chip", tailSel: ".addlink",
+      onDrop: (targetId, before, toEnd)=>reorderLink(group.id, link.id, targetId, before, toEnd)
     });
   }
+  chip.dataset.sortId = link.id;
   chip.appendChild(faviconEl(link, group.color));
   const meta = el("span","meta");
   meta.appendChild(el("span","t", link.title || hostOf(link.url)));
@@ -1254,23 +1341,6 @@ function linksGridEl(g, visLinks){
   const add = el("button","addlink");
   add.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 북마크 추가';
   add.addEventListener("click", ()=>openLinkDlg(g.id, null));
-  add.addEventListener("dragover", e=>{
-    if(!dragLink || dragLink.gid !== g.id) return;
-    e.preventDefault(); add.classList.add("dropIn");
-  });
-  add.addEventListener("dragleave", ()=>add.classList.remove("dropIn"));
-  add.addEventListener("drop", e=>{
-    add.classList.remove("dropIn");
-    if(!dragLink || dragLink.gid !== g.id) return;
-    e.preventDefault();
-    const gg = findGroup(g.id); if(!gg) return;
-    const from = gg.links.findIndex(x=>x.id === dragLink.lid);
-    if(from < 0) return;
-    const [mv] = gg.links.splice(from, 1);
-    gg.links.push(mv);
-    dragLink = null;
-    persist();
-  });
   grid.appendChild(add);
   return grid;
 }
@@ -1286,7 +1356,6 @@ function effMemoColor(p){
   const g = p.bg ? findGroup(p.bg) : null;
   return (g && g.color) || "#f59e0b";
 }
-let dragMemo = null;
 function memoChipEl(p, g, sub, opts){
   opts = opts || {};
   const isEdit = state.editMode;
@@ -1294,6 +1363,7 @@ function memoChipEl(p, g, sub, opts){
   chip.setAttribute("role","button"); chip.tabIndex = 0;
   chip.addEventListener("keydown", e=>{ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); chip.click(); } });
   chip.style.setProperty("--mc", effMemoColor(p));
+  chip.dataset.sortId = p.id;
   const fav = el("span","fav"); fav.innerHTML = MEMO_ICON;
   chip.appendChild(fav);
   const meta = el("span","meta");
@@ -1308,6 +1378,7 @@ function memoChipEl(p, g, sub, opts){
   chip.appendChild(meta);
   chip.title = p.name + (isEdit ? " — 클릭: 설정(이름·색·그룹·삭제)" : " — 클릭: 메모 열기");
   chip.addEventListener("click", ()=>{
+    if(Date.now() - dragJustEnded < 300) return;
     if(isEdit){ openGMemoDlg(p.bg, p.id); return; }
     if(state._act !== p.bg) selectTab(p.bg);
     inlineOpen(p.id);
@@ -1318,36 +1389,9 @@ function memoChipEl(p, g, sub, opts){
     chip.appendChild(badge);
   }
   if(isEdit && opts.dnd){
-    /* 편집 모드: 같은 그룹 안에서 드래그로 순서 이동 */
-    chip.draggable = true;
-    chip.addEventListener("dragstart", e=>{
-      dragMemo = { bg: p.bg, id: p.id };
-      chip.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-      try{ e.dataTransfer.setData("text/plain", p.id); }catch(_){}
-    });
-    chip.addEventListener("dragend", ()=>{
-      dragMemo = null;
-      document.querySelectorAll(".memochip.dragging,.memochip.dropL,.memochip.dropR").forEach(c=>c.classList.remove("dragging","dropL","dropR"));
-      document.querySelectorAll(".addmemo.dropIn").forEach(c=>c.classList.remove("dropIn"));
-    });
-    const beforeOf = e=>{
-      const r = chip.getBoundingClientRect();
-      return GM_CARD_STYLE === "list" ? (e.clientY - r.top) < r.height / 2 : (e.clientX - r.left) < r.width / 2;
-    };
-    chip.addEventListener("dragover", e=>{
-      if(!dragMemo || dragMemo.bg !== p.bg || dragMemo.id === p.id) return;
-      e.preventDefault(); e.dataTransfer.dropEffect = "move";
-      const b = beforeOf(e);
-      chip.classList.toggle("dropL", b); chip.classList.toggle("dropR", !b);
-    });
-    chip.addEventListener("dragleave", ()=>chip.classList.remove("dropL","dropR"));
-    chip.addEventListener("drop", e=>{
-      chip.classList.remove("dropL","dropR");
-      if(!dragMemo || dragMemo.bg !== p.bg || dragMemo.id === p.id) return;
-      e.preventDefault();
-      reorderMemo(p.bg, dragMemo.id, p.id, beforeOf(e));
-      dragMemo = null;
+    makeSortable(chip, {
+      peerSel: ".memoGrid .memochip", tailSel: ".addmemo", vertical: GM_CARD_STYLE === "list",
+      onDrop: (targetId, before, toEnd)=>reorderMemo(p.bg, p.id, toEnd ? null : targetId, before)
     });
   }
   return chip;
@@ -1371,13 +1415,6 @@ function memoAddTile(g){
   add.type = "button";
   add.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 메모 추가';
   add.addEventListener("click", ()=>openGMemoDlg(g.id, null));
-  add.addEventListener("dragover", e=>{ if(!dragMemo || dragMemo.bg !== g.id) return; e.preventDefault(); add.classList.add("dropIn"); });
-  add.addEventListener("dragleave", ()=>add.classList.remove("dropIn"));
-  add.addEventListener("drop", e=>{
-    add.classList.remove("dropIn");
-    if(!dragMemo || dragMemo.bg !== g.id) return;
-    e.preventDefault(); reorderMemo(g.id, dragMemo.id, null, false); dragMemo = null;
-  });
   return add;
 }
 /* 그룹 화면의 메모 구획 */
