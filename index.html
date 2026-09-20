@@ -158,9 +158,16 @@ header{
   white-space:pre-wrap; word-break:break-word;
   background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius);
   padding:14px 16px; font:inherit; font-size:14px; line-height:1.75; color:var(--text);
-  box-shadow:var(--shadow); scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  box-shadow:var(--shadow); -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;                       /* 편집기 끝에 닿아도 바깥 화면이 따라 움직이지 않음 */
+  scrollbar-width:thin; scrollbar-gutter:stable;
+  scrollbar-color:transparent transparent;           /* 평소엔 보이지 않음 */
 }
-#padText::-webkit-scrollbar{display:none; width:0}
+#padText.scrolling, #padText:hover{scrollbar-color:color-mix(in srgb, var(--text) 26%, transparent) transparent}
+#padText::-webkit-scrollbar{width:9px; height:9px}
+#padText::-webkit-scrollbar-track{background:transparent}
+#padText::-webkit-scrollbar-thumb{background:transparent; border-radius:9px; border:2px solid transparent; background-clip:content-box}
+#padText.scrolling::-webkit-scrollbar-thumb, #padText:hover::-webkit-scrollbar-thumb{background-color:color-mix(in srgb, var(--text) 26%, transparent)}
 #padText:focus{border-color:var(--accent)}
 #padText:empty::before{content:attr(data-ph); color:var(--muted); pointer-events:none}
 #padText b, #padText strong{font-weight:800}
@@ -1499,12 +1506,27 @@ function recentSectionEl(flat){
 /* ---- 인라인 편집기(그룹 화면 안에 펼치는 스크래치 패드) ---- */
 function syncSplitVars(){
   const c = $("#content"); if(!c) return;
-  c.style.setProperty("--ch", c.clientHeight + "px");
+  const cs = getComputedStyle(c);
+  const inner = c.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  c.style.setProperty("--ch", Math.max(240, Math.floor(inner)) + "px");
   const w = parseInt(store.get(PANEL_W_KEY) || "0", 10);
   if(w >= 320) c.style.setProperty("--panelW", Math.min(w, Math.floor(c.clientWidth * 0.7)) + "px");
   else c.style.removeProperty("--panelW");
 }
 window.addEventListener("resize", ()=>{ if(state.inlineMemo) syncSplitVars(); });
+(function initPanelWheelGuard(){
+  const slot = $("#inlineSlot"); if(!slot) return;
+  slot.style.overscrollBehavior = "contain";
+  slot.addEventListener("wheel", e=>{
+    if(!state.inlineMemo || !padEl) return;
+    const insidePad = padEl.contains(e.target);
+    const can = padEl.scrollHeight - padEl.clientHeight > 1;
+    const atTop = padEl.scrollTop <= 0;
+    const atBottom = padEl.scrollTop + padEl.clientHeight >= padEl.scrollHeight - 1;
+    /* 편집기 밖(도구줄 등)이거나, 편집기가 그 방향으로 더 움직일 수 없으면 페이지 스크롤로 새지 않게 막음 */
+    if(!insidePad || !can || (e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) e.preventDefault();
+  }, { passive:false });
+})();
 (function initSplitHandle(){
   const h = $("#splitHandle"); if(!h) return;
   let startX = 0, startW = 0;
@@ -2264,6 +2286,11 @@ function makePadEl(){
   d.addEventListener("input", syncFromPad);
   d.addEventListener("paste", padPasteHandler);
   d.addEventListener("keydown", padKeyHandler);
+  let scrT = null;
+  d.addEventListener("scroll", ()=>{
+    d.classList.add("scrolling");
+    clearTimeout(scrT); scrT = setTimeout(()=>d.classList.remove("scrolling"), 900);
+  }, { passive:true });
   return d;
 }
 function applyPadPrefs(){
