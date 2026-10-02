@@ -1077,6 +1077,7 @@ try{ openSet = new Set(JSON.parse(store.get(OPEN_KEY) || "[]")); }catch(e){}
 function saveOpen(){ store.set(OPEN_KEY, JSON.stringify([...openSet])); }
 /* 탭 선택: 조상 펼침 + 북마크 영역 맨 위로 */
 function selectTab(id){
+  if(!id) return;   // 빈 탭 id(예: 최상위 메모의 빈 그룹 id)로는 이동하지 않음 — 첫 그룹으로 튕기는 현상 방지
   if(state.inlineMemo){
     const p = state.pads.find(x=>x.id === state.inlineMemo);
     if(!p || p.bg !== id){
@@ -1376,9 +1377,13 @@ function memoChipEl(p, g, sub, opts){
     if(GM_CARD_STYLE === "list" && !sub) meta.appendChild(el("span","time", p.updatedAt ? fmtTs(p.updatedAt) : ""));
   }
   chip.appendChild(meta);
-  chip.title = p.name + (isEdit ? " — 클릭: 설정(이름·색·그룹·삭제)" : " — 클릭: 메모 열기");
+  chip.title = p.name + (isEdit ? " — 클릭: 설정(이름·색·그룹·삭제)" : (p.bg ? " — 클릭: 메모 열기" : " — 클릭: 📝 메모 탭에서 열기"));
   chip.addEventListener("click", ()=>{
     if(Date.now() - dragJustEnded < 300) return;
+    if(!p.bg){   // 📝 탭 소속(최상위) 메모: 북마크 그룹이 없으므로 📝 메모 탭에서 연다 / 편집 모드는 📝 탭의 설정 창
+      if(isEdit) openPadDlg(p.id); else openTopPad(p.id);
+      return;
+    }
     if(isEdit){ openGMemoDlg(p.bg, p.id); return; }
     if(state._act !== p.bg) selectTab(p.bg);
     inlineOpen(p.id);
@@ -1530,7 +1535,8 @@ function recentSectionEl(flat){
       band.appendChild(twoColEl(
         ms.map(p=>{
           const g = p.bg ? findGroup(p.bg) : null;
-          const where = p.bg ? (groupPathOf(p.bg) || "그룹") : "📝 메모";
+          const where = p.bg ? (groupPathOf(p.bg) || "그룹")
+                             : "📝 메모" + (p.gid ? " › " + (((state.padGroups.find(g=>g.id === p.gid) || {}).name) || "그룹") : "");
           return memoChipEl(p, g || { id:"", color:"#f59e0b" }, where + " · " + stamp(p.created));
         }),
         ls.map(({l, f})=>chipEl(l, f.g, f.path.join(" › ") + " · " + stamp(l.created)))
@@ -1597,9 +1603,22 @@ function placePadHost(where){
     host.classList.remove("inlineMode","tall");
   }
 }
+/* 최상위 메모(📝 탭 소속)를 📝 메모 탭에서 연다 — [전체] 최근 추가·검색 결과·inlineOpen 위임에서 공용 */
+function openTopPad(id, focus){
+  const p = state.pads.find(x=>x.id === id);
+  if(!p || p.bg) return;
+  flushMemo();
+  state.inlineMemo = null;
+  state.padActive = id; store.set(PAD_TAB_KEY, id);
+  state.padGroupSel = null;                       // 📝 탭의 그룹 줄은 활성 메모의 그룹을 따라 펼쳐짐
+  if(padBuilt) loadPadIntoEl();
+  selectTab("__memo");
+  if(focus) setTimeout(()=>{ if(padEl) padEl.focus(); }, 80);
+}
 function inlineOpen(id, focus){
   const p = state.pads.find(x=>x.id === id);
-  if(!p || !p.bg) return;
+  if(!p) return;
+  if(!p.bg){ openTopPad(id, focus); return; }     // 그룹 메모가 아니면 📝 탭으로
   buildPadHost();
   if(state.padActive !== id){
     flushMemo();
@@ -2031,9 +2050,7 @@ function render(){
       btn.addEventListener("click", ()=>{
         $("#q").value = ""; state.query = "";
         if(p.bg){ selectTab(p.bg); inlineOpen(p.id); return; }
-        state.padActive = p.id; store.set(PAD_TAB_KEY, p.id);
-        if(padBuilt) loadPadIntoEl();
-        selectTab("__memo");
+        openTopPad(p.id);
       });
       sec.appendChild(btn);
       box.appendChild(sec);
@@ -2732,6 +2749,7 @@ async function delPad(id){
   }
   ensurePads();
   loadPadIntoEl(); renderPadTabs(); updatePadMeta(); scheduleMemoSave(""); toast("메모 탭을 삭제했어요");
+  if(state._act !== "__memo") render();
 }
 let editingPadId = null, padPick = "";
 function buildPadSwatches(){
@@ -2794,6 +2812,7 @@ $("#formPad").addEventListener("submit", async e=>{
   state.padGroupSel = null;
   $("#dlgPad").close();
   scheduleMemoSave(""); renderPadTabs(); updatePadMeta();
+  if(state._act !== "__memo") render();           // [전체] 최근 추가 등 📝 탭 밖에서 열었을 때 화면 갱신
 });
 $("#pCancel").addEventListener("click", ()=>$("#dlgPad").close());
 function renamePad(){
