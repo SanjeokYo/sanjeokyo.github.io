@@ -105,7 +105,7 @@ summary{cursor:pointer}
     <input type="text" id="fMarker" value=",,," maxlength="8" autocomplete="off" spellcheck="false">
     <label>이 기기에서 모바일 열기 방식 <span style="font-weight:400">(기기별 저장)</span></label>
     <div class="seg" id="modeSeg"><button data-v="app">Docs 앱</button><button data-v="browser">브라우저</button></div>
-    <p class="note">앱 모드: 버튼을 한 번 더 눌러 Docs 앱이 그 자리에서 열려요. 브라우저 모드: 바로 이동하지만 모바일 웹 Docs는 위치 이동을 지원하지 않아요.</p>
+    <p class="note">앱 모드: 버튼을 한 번 더 눌러 Docs 앱이 그 자리에서 열려요. 브라우저 모드: 읽기 전용 화면(mobilebasic)이 마지막 위치에서 바로 열려요. 하이라이트·댓글이나 마커 입력은 "편집으로 열기"로 해요.</p>
     <p class="err" id="setupErr"></p>
     <div class="acts">
       <div class="row">
@@ -178,6 +178,8 @@ window.addEventListener("error", e=>{ show("work"); msg("페이지 오류: " + (
 window.addEventListener("unhandledrejection", e=>{ show("work"); msg("처리되지 않은 오류: " + (e.reason && (e.reason.message || e.reason.code) || e.reason), "err", false); dbg({ reason: String(e.reason && (e.reason.stack || e.reason)) }); });
 function fmtTime(ms){ if(!ms) return ""; const d = new Date(ms); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
 function buildUrl(id, tab, bm, multiTab){ let u = `https://docs.google.com/document/d/${id}/edit`; if(multiTab && tab) u += "?tab=" + encodeURIComponent(tab); if(bm) u += "#bookmark=" + bm; return u; }
+/* 모바일 브라우저용 읽기 전용 화면. 북마크는 HTML 앵커(id.…)로 렌더링되므로 #북마크ID 로 그 자리에 열린다 (2026-10-09 폰 테스트 확인) */
+function buildBasicUrl(id, tab, bm, multiTab){ let u = `https://docs.google.com/document/d/${id}/mobilebasic`; if(multiTab && tab) u += "?tab=" + encodeURIComponent(tab); if(bm) u += "#" + bm; return u; }
 
 let mod = null, auth = null, db = null, settingsRef = null, readposRef = null, state = { user:null, settings:null };
 
@@ -368,29 +370,25 @@ async function run(st){
 
   msg(note, kind, false);
   if(snippet){ $("#snipText").textContent = snippet; $("#snip").classList.remove("hidden"); }
-  go(url, bm);
+  go({ editUrl: url, basicUrl: buildBasicUrl(docId, tab, bm, multiTab), bm });
 }
 
-function go(url, bm){
+function go({ editUrl, basicUrl, bm }){
   const acts = $("#acts");
   if(!isMobile){
-    acts.replaceChildren(link(url, bm ? "📖 지금 열기" : "문서 열기", true));
+    acts.replaceChildren(link(editUrl, bm ? "📖 지금 열기" : "문서 열기", true));
     $("#hint").textContent = "잠시 후 자동으로 열려요.";
-    setTimeout(()=>{ location.replace(url); }, 500);
+    setTimeout(()=>{ location.replace(editUrl); }, 500);
     return;
   }
   const mode = store.get(MODE_KEY) || "app";
   if(mode === "browser"){
-    acts.replaceChildren(link(url, bm ? "📖 지금 열기" : "문서 열기", true));
-    $("#hint").textContent = "브라우저 모드: 잠시 후 자동으로 열려요. (모바일 웹 Docs는 위치 이동을 지원하지 않아요)";
-    setTimeout(()=>{ location.replace(url); }, 500);
+    acts.replaceChildren(link(basicUrl, bm ? "📖 지금 열기 (읽기 전용)" : "📄 문서 열기 (읽기 전용)", true), link(editUrl, "✏ 편집으로 열기 (웹 Docs)", false));
+    $("#hint").textContent = "브라우저 모드: 잠시 후 읽기 전용 화면이 " + (bm ? "마지막 위치에서 " : "") + "열려요. 하이라이트·댓글·마커(,,,) 입력은 편집으로 열기에서.";
+    setTimeout(()=>{ location.replace(basicUrl); }, 500);
     return;
   }
-  const a = link(url, bm ? "📖 이어 읽기" : "📄 문서 열기", true);
-  acts.replaceChildren(a);
-  const sw = el("button", "btn small", "브라우저로 열기");
-  sw.addEventListener("click", ()=>{ location.href = url; });
-  acts.appendChild(sw);
+  acts.replaceChildren(link(editUrl, bm ? "📖 이어 읽기" : "📄 문서 열기", true), link(basicUrl, "읽기 전용으로 열기 (브라우저)", false));
   $("#hint").textContent = bm ? "버튼을 누르면 Docs 앱이 마지막 위치에서 열려요." : "버튼을 누르면 Docs 앱이 열려요.";
 }
 </script>
