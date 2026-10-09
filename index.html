@@ -814,6 +814,7 @@ dialog::backdrop{background:rgba(10,12,25,.45); backdrop-filter:blur(3px)}
       <button data-v="normal">보통</button><button data-v="wide">넓게</button><button data-v="full">전체</button>
     </div>
   </div>
+  <button class="mitem" id="miReadPos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Google Docs 이어 읽기 설정</button>
   <button class="mitem" id="miExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>백업 내보내기 (JSON)</button>
   <button class="mitem" id="miImport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4 4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>백업 가져오기</button>
   <button class="mitem hidden" id="miReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>연결 설정 다시 하기</button>
@@ -968,6 +969,8 @@ function normalizeUrl(u){
   }catch(e){ return null; }
 }
 function hostOf(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return ""; } }
+/* Google Docs 문서 링크면 문서 ID, 아니면 null — 이어 읽기(open.html) 대상 판별 */
+function docsIdOf(u){ const m = /^https?:\/\/docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]{10,})/.exec(u || ""); return m ? m[1] : null; }
 
 /* ---------- 테마 ---------- */
 function applyTheme(v){
@@ -1276,6 +1279,8 @@ function chipEl(link, group, sub){
   if(!isEdit){
     chip.className = "chip";
     chip.href = link.url; chip.target = "_blank"; chip.rel = "noopener noreferrer";
+    const dId = docsIdOf(link.url);
+    if(dId){ chip.href = "open.html?id=" + encodeURIComponent(dId) + "&n=" + encodeURIComponent(link.title || ""); chip.title = "마지막 읽은 위치에서 열기"; }
   }else{
     chip.role = "button"; chip.tabIndex = 0;
     chip.addEventListener("click", ()=>{ if(Date.now() - dragJustEnded < 300) return; openLinkDlg(group.id, link.id); });
@@ -1291,7 +1296,7 @@ function chipEl(link, group, sub){
   chip.appendChild(faviconEl(link, group.color));
   const meta = el("span","meta");
   meta.appendChild(el("span","t", link.title || hostOf(link.url)));
-  meta.appendChild(el("span","m", sub || link.memo || hostOf(link.url)));
+  meta.appendChild(el("span","m", (docsIdOf(link.url) ? "📖 " : "") + (sub || link.memo || hostOf(link.url))));
   chip.appendChild(meta);
   if(isEdit){
     const badge = el("span","editbadge");
@@ -3224,6 +3229,7 @@ $("#qClear").addEventListener("click", ()=>{ $("#q").value = ""; state.query = "
 /* ---------- 메뉴 · 백업 ---------- */
 $("#menuBtn").addEventListener("click", ()=>$("#dlgMenu").showModal());
 $("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());
+$("#miReadPos").addEventListener("click", ()=>{ $("#dlgMenu").close(); window.open("open.html?setup=1", "_blank", "noopener"); });
 $("#miExport").addEventListener("click", async ()=>{
   $("#dlgMenu").close();
   let withImg = false;
