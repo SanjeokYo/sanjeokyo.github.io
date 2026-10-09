@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4f6ef7">
+<meta name="robots" content="noindex">
+<title>내 북마크 (beta)</title>
+<style>body{margin:0;background:#f4f5fa;color:#69708a;font:14px -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;display:grid;place-items:center;min-height:100dvh}@media(prefers-color-scheme:dark){body{background:#0e1120;color:#98a0bd}}</style>
+</head>
+<body>
+<div id="boot">베타 버전 불러오는 중…</div>
+<script>
+/*
+ * 내 북마크 (beta) — "Google Docs 이어 읽기" 베타 셸
+ * ─────────────────────────────────────────────────────────────
+ * index.html을 그대로 불러와 아래 7곳만 바꿔 띄웁니다. (원본 index.html은 건드리지 않음)
+ *   1) 제목·로고에 beta 표시
+ *   2) Google Docs 문서 링크 → open.html?id=문서ID (마지막 읽은 위치에서 열기)
+ *   3) 메모 줄 📖 표시
+ *   4) 설정 메뉴에 "Google Docs 이어 읽기 설정" 항목
+ * 베타 확인이 끝나면 같은 변경을 index.html에 직접 반영하고 이 파일은 지웁니다.
+ * 바꿀 지점을 못 찾으면(index.html이 바뀐 경우) index.html로 되돌아갑니다.
+ */
+function patchIndex(html){
+  const rep = (old, neu) => {
+    const n = html.split(old).length - 1;
+    if(n !== 1) throw new Error("patch point " + (n ? "not unique" : "not found") + ": " + old.slice(0, 50));
+    html = html.replace(old, () => neu);
+  };
+  rep("<title>내 북마크</title>", "<title>내 북마크 (beta)</title>");
+  rep("<span>내 북마크</span>", '<span>내 북마크 <span class="betatag">beta</span></span>');
+  // 첫 번째 </style> = 메인 스타일 블록
+  {
+    const i = html.indexOf("</style>");
+    if(i < 0) throw new Error("patch point not found: </style>");
+    html = html.slice(0, i) + ".betatag{font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--accent);color:#fff;vertical-align:middle;margin-left:2px;letter-spacing:.03em}\n" + html.slice(i);
+  }
+  rep('function hostOf(u){ try{ return new URL(u).hostname.replace(/^www\\./,""); }catch(e){ return ""; } }',
+      'function hostOf(u){ try{ return new URL(u).hostname.replace(/^www\\./,""); }catch(e){ return ""; } }\n' +
+      '/* Google Docs 문서 링크면 문서 ID, 아니면 null — 이어 읽기(open.html) 대상 판별 */\n' +
+      'function docsIdOf(u){ const m = /^https?:\\/\\/docs\\.google\\.com\\/document\\/(?:u\\/\\d+\\/)?d\\/([A-Za-z0-9_-]{10,})/.exec(u || ""); return m ? m[1] : null; }');
+  // chipEl 함수 안에서만 바꾸기
+  {
+    const start = html.indexOf("function chipEl(link, group, sub){");
+    if(start < 0) throw new Error("patch point not found: chipEl");
+    let head = html.slice(0, start), tail = html.slice(start);
+    const old1 = 'chip.href = link.url; chip.target = "_blank"; chip.rel = "noopener noreferrer";';
+    if(tail.split(old1).length !== 2) throw new Error("patch point not unique: chip.href");
+    tail = tail.replace(old1, () => old1 + '\n' +
+      '    const dId = docsIdOf(link.url);\n' +
+      '    if(dId){ chip.href = "open.html?id=" + encodeURIComponent(dId) + "&n=" + encodeURIComponent(link.title || ""); chip.title = "마지막 읽은 위치에서 열기"; }');
+    const old2 = 'meta.appendChild(el("span","m", sub || link.memo || hostOf(link.url)));';
+    if(tail.split(old2).length !== 2) throw new Error("patch point not unique: meta.m");
+    tail = tail.replace(old2, () => 'meta.appendChild(el("span","m", (docsIdOf(link.url) ? "📖 " : "") + (sub || link.memo || hostOf(link.url))));');
+    html = head + tail;
+  }
+  const oldBtn = '  <button class="mitem" id="miExport">';
+  rep(oldBtn,
+      '  <button class="mitem" id="miReadPos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Google Docs 이어 읽기 설정</button>\n' + oldBtn);
+  rep('$("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());',
+      '$("#miClose").addEventListener("click", ()=>$("#dlgMenu").close());\n' +
+      '$("#miReadPos").addEventListener("click", ()=>{ $("#dlgMenu").close(); window.open("open.html?setup=1", "_blank", "noopener"); });');
+  return html;
+}
+if(typeof window !== "undefined" && window.document){
+  (async ()=>{
+    try{
+      const r = await fetch("index.html", { cache: "no-store" });
+      if(!r.ok) throw new Error("index.html HTTP " + r.status);
+      const html = patchIndex(await r.text());
+      document.open(); document.write(html); document.close();
+    }catch(e){
+      document.getElementById("boot").textContent = "베타를 적용하지 못해 원래 홈으로 이동해요: " + e.message;
+      setTimeout(()=>location.replace("index.html"), 1500);
+    }
+  })();
+}
+</script>
+</body>
+</html>

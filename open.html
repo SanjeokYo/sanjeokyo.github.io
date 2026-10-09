@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4f6ef7">
+<meta name="robots" content="noindex">
+<title>이어 읽기 · 내 북마크</title>
+<style>
+:root{
+  --bg:#f4f5fa; --card:#ffffff; --text:#1b1e2b; --muted:#69708a; --line:#e4e6ef;
+  --accent:#4f6ef7; --danger:#e5484d; --ok:#18a058; --warn:#d97706;
+  --shadow:0 1px 2px rgba(20,24,50,.05),0 8px 24px -18px rgba(20,24,50,.25);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg:#0e1120; --card:#181b2e; --text:#e9ebf5; --muted:#98a0bd; --line:#272b45;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -18px rgba(0,0,0,.6);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme]){
+    --bg:#0e1120; --card:#181b2e; --text:#e9ebf5; --muted:#98a0bd; --line:#272b45;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -18px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100dvh; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; align-items:center; padding:max(16px, env(safe-area-inset-top)) 16px 32px;
+}
+.card{
+  width:100%; max-width:480px; background:var(--card); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 18px 16px; margin-top:6vh;
+}
+.logo{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; font-weight:600; letter-spacing:.01em}
+.logo .mark{width:22px;height:22px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px}
+h1{font-size:19px; margin:12px 0 2px; line-height:1.35; overflow-wrap:anywhere}
+.sub{color:var(--muted); font-size:13px; margin:0 0 14px; overflow-wrap:anywhere}
+.status{display:flex; align-items:flex-start; gap:10px; padding:12px 12px; border-radius:11px; background:color-mix(in srgb, var(--accent) 8%, transparent); min-height:48px}
+.status.warn{background:color-mix(in srgb, var(--warn) 12%, transparent)}
+.status.err{background:color-mix(in srgb, var(--danger) 10%, transparent)}
+.status.ok{background:color-mix(in srgb, var(--ok) 10%, transparent)}
+.status p{margin:0; font-size:14px; overflow-wrap:anywhere}
+.spin{flex:none; width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb, var(--accent) 25%, transparent);border-top-color:var(--accent);animation:sp .8s linear infinite;margin-top:2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none !important}
+.snip{margin:12px 0 0; padding:10px 12px; border-left:3px solid var(--accent); background:var(--bg); border-radius:0 10px 10px 0; font-size:13.5px; color:var(--text); overflow-wrap:anywhere}
+.snip b{color:var(--muted); font-weight:600; font-size:12px; display:block; margin-bottom:2px}
+.acts{display:flex; flex-direction:column; gap:10px; margin-top:16px}
+.btn{
+  display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:54px; padding:12px 16px;
+  border-radius:13px; border:1px solid var(--line); background:var(--card); color:var(--text);
+  font:inherit; font-size:16px; font-weight:700; text-decoration:none; cursor:pointer;
+}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-size:17px}
+.btn.primary:active{transform:translateY(1px)}
+.btn.small{min-height:42px; font-size:14px; font-weight:600}
+.row{display:flex; gap:10px}
+.row .btn{flex:1}
+.links{display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; margin-top:16px; font-size:13px}
+.links a{color:var(--muted); text-decoration:none}
+.links a:hover{color:var(--accent); text-decoration:underline}
+.hint{color:var(--muted); font-size:12.5px; margin:8px 0 0; text-align:center}
+label{display:block; font-size:13px; font-weight:600; color:var(--muted); margin:14px 0 5px}
+input[type=text], input[type=password]{
+  width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text);
+  font:inherit; font-size:14px;
+}
+input:focus{outline:2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-color:var(--accent)}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--bg)}
+.seg button{border:0; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600; padding:7px 14px; cursor:pointer}
+.seg button.on{background:var(--accent); color:#fff}
+.err{color:var(--danger); font-size:13px; margin:8px 0 0; min-height:1em; overflow-wrap:anywhere}
+.ok{color:var(--ok)}
+.note{font-size:12.5px; color:var(--muted); margin:6px 0 0; line-height:1.5}
+code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.92em; background:var(--bg); padding:1px 5px; border-radius:5px}
+details{margin-top:14px; font-size:13px; color:var(--muted)}
+summary{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><span class="mark">📖</span><span>이어 읽기 · 내 북마크</span></div>
+
+  <!-- 로그인 -->
+  <section id="sLogin" class="hidden">
+    <h1>로그인이 필요해요</h1>
+    <p class="sub">북마크 홈과 같은 Google 계정으로 로그인하세요.</p>
+    <div class="acts"><button class="btn primary" id="loginBtn">Google 계정으로 로그인</button></div>
+    <p class="err" id="loginErr"></p>
+  </section>
+
+  <!-- 연결 설정 -->
+  <section id="sSetup" class="hidden">
+    <h1>이어 읽기 연결 설정</h1>
+    <p class="sub">한 번만 입력하면 모든 기기에서 함께 써요. (리졸버 주소·비밀키는 내 계정만 읽을 수 있는 곳에 저장돼요)</p>
+    <label for="fUrl">리졸버 주소 (Apps Script 웹 앱 URL, …/exec)</label>
+    <input type="text" id="fUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false">
+    <label for="fKey">비밀키 (스크립트 속성 KEY와 같은 값)</label>
+    <input type="password" id="fKey" placeholder="영문·숫자 12자 이상 권장" autocomplete="off">
+    <label for="fMarker">마커 (읽기를 멈출 때 문서에 입력하는 글자)</label>
+    <input type="text" id="fMarker" value=",,," maxlength="8" autocomplete="off" spellcheck="false">
+    <label>이 기기에서 모바일 열기 방식 <span style="font-weight:400">(기기별 저장)</span></label>
+    <div class="seg" id="modeSeg"><button data-v="app">Docs 앱</button><button data-v="browser">브라우저</button></div>
+    <p class="note">앱 모드: 버튼을 한 번 더 눌러 Docs 앱이 그 자리에서 열려요. 브라우저 모드: 바로 이동하지만 모바일 웹 Docs는 위치 이동을 지원하지 않아요.</p>
+    <p class="err" id="setupErr"></p>
+    <div class="acts">
+      <div class="row">
+        <button class="btn small" id="testBtn">연결 테스트</button>
+        <button class="btn small primary" id="saveBtn">저장</button>
+      </div>
+    </div>
+    <div class="links"><a href="#" id="setupBack">← 돌아가기</a></div>
+  </section>
+
+  <!-- 열기 -->
+  <section id="sWork" class="hidden">
+    <h1 id="docTitle">문서</h1>
+    <p class="sub" id="docSub"></p>
+    <div class="status" id="status"><span class="spin" id="spin"></span><p id="msg">준비 중…</p></div>
+    <div class="snip hidden" id="snip"><b>📍 마지막 위치 근처</b><span id="snipText"></span></div>
+    <div class="acts" id="acts"></div>
+    <p class="hint" id="hint"></p>
+    <div class="links" id="links"></div>
+    <details id="dbg" class="hidden"><summary>자세히</summary><pre id="dbgText" style="white-space:pre-wrap;font-size:12px"></pre></details>
+  </section>
+</div>
+
+<script type="module">
+/* ── 설정값 (index.html과 동일) ── */
+const EMBEDDED_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA4FpZ2gruUObujKNZuq9BHuMN9vDN0OU8",
+  authDomain: "my-bookmarks-b140e.firebaseapp.com",
+  projectId: "my-bookmarks-b140e",
+  storageBucket: "my-bookmarks-b140e.firebasestorage.app",
+  messagingSenderId: "1059895633380",
+  appId: "1:1059895633380:web:62d395d0efae63c20453f1",
+  measurementId: "G-CYRSG10446"
+};
+
+const SDK = "12.15.0";
+const THEME_KEY = "bmh_theme", CFG_KEY = "bmh_cfg", MODE_KEY = "bmh_rp_mobile";
+const DEFAULT_MARKER = ",,,";
+const $ = s => document.querySelector(s);
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+(function theme(){ const t = store.get(THEME_KEY); if(t === "light" || t === "dark") document.documentElement.dataset.theme = t; })();
+
+/* ── 파라미터 ── */
+const qs = new URLSearchParams(location.search);
+const docId = (qs.get("id") || "").trim();
+const docName = (qs.get("n") || "").trim();
+const wantSetup = qs.get("setup") === "1";
+const validId = /^[A-Za-z0-9_-]{10,}$/.test(docId);
+const plainUrl = validId ? `https://docs.google.com/document/d/${docId}/edit` : "";
+const isMobile = (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean")
+  ? navigator.userAgentData.mobile : /Android|iPhone|iPod|Mobile/i.test(navigator.userAgent);
+const homeUrl = (()=>{ try{ const r = new URL(document.referrer); if(r.origin === location.origin && !/open\.html$/.test(r.pathname)) return r.pathname; }catch(e){} return "./"; })();
+
+/* ── UI 도우미 ── */
+function show(id){ for(const s of ["sLogin","sSetup","sWork"]) $("#"+s).classList.toggle("hidden", s !== id); }
+function msg(text, kind, spinning){
+  $("#msg").textContent = text;
+  $("#status").className = "status" + (kind ? " " + kind : "");
+  $("#spin").classList.toggle("hidden", !spinning);
+}
+function el(tag, cls, text){ const n = document.createElement(tag); if(cls) n.className = cls; if(text != null) n.textContent = text; return n; }
+function link(href, text, primary){ const a = el("a", "btn" + (primary ? " primary" : " small"), text); a.href = href; a.rel = "noopener"; return a; }
+function setLinks(items){ const box = $("#links"); box.innerHTML = ""; for(const [href, text, onclick] of items){ const a = el("a", null, text); a.href = href; if(onclick) a.addEventListener("click", e=>{ e.preventDefault(); onclick(); }); box.appendChild(a); } }
+function dbg(obj){ try{ $("#dbg").classList.remove("hidden"); $("#dbgText").textContent = JSON.stringify(obj, null, 1); }catch(e){} }
+function fmtTime(ms){ if(!ms) return ""; const d = new Date(ms); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
+function buildUrl(id, tab, bm, multiTab){ let u = `https://docs.google.com/document/d/${id}/edit`; if(multiTab && tab) u += "?tab=" + encodeURIComponent(tab); if(bm) u += "#bookmark=" + bm; return u; }
+
+let mod = null, auth = null, db = null, settingsRef = null, readposRef = null, state = { user:null, settings:null };
+
+/* ── 모바일 열기 방식 세그먼트 ── */
+function paintMode(){ const v = store.get(MODE_KEY) || "app"; $("#modeSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.v === v)); }
+$("#modeSeg").addEventListener("click", e=>{ const b = e.target.closest("button"); if(!b) return; store.set(MODE_KEY, b.dataset.v); paintMode(); });
+paintMode();
+
+/* ── 시작 ── */
+(async function main(){
+  $("#docTitle").textContent = docName || (validId ? "Google Docs 문서" : "이어 읽기");
+  if(!validId && !wantSetup){
+    show("work"); msg("문서 ID가 없어요. 북마크 홈에서 Google Docs 북마크를 눌러 들어오면 마지막 위치에서 열려요.", "warn", false);
+    setLinks([["?setup=1", "⚙ 연결 설정"], [homeUrl, "홈으로"]]);
+    return;
+  }
+  let cfg = (typeof EMBEDDED_FIREBASE_CONFIG === "object" && EMBEDDED_FIREBASE_CONFIG) ? EMBEDDED_FIREBASE_CONFIG : null;
+  if(!cfg){ try{ cfg = JSON.parse(store.get(CFG_KEY) || "null"); }catch(e){ cfg = null; } }
+  if(!cfg){ show("work"); msg("Firebase 연결 설정이 없어요. 북마크 홈을 먼저 설정한 뒤 다시 열어주세요.", "err", false); setLinks([[homeUrl, "홈으로"]]); return; }
+  if(validId){ show("work"); msg("연결 중…", "", true); }
+  try{
+    const [appM, authM, fsM] = await Promise.all([
+      import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-app.js`),
+      import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-auth.js`),
+      import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-firestore.js`)
+    ]);
+    mod = { ...appM, ...authM, ...fsM };
+  }catch(err){
+    show("work"); msg("연결 모듈을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.", "err", false);
+    $("#acts").replaceChildren(link(plainUrl || homeUrl, plainUrl ? "그냥 Google Docs 열기" : "홈으로", true)); return;
+  }
+  const app = mod.initializeApp(cfg);
+  auth = mod.getAuth(app); auth.languageCode = "ko";
+  db = mod.getFirestore(app);
+  settingsRef = mod.doc(db, "bookmarks", "settings");
+  readposRef = mod.doc(db, "bookmarks", "readpos");
+
+  const provider = new mod.GoogleAuthProvider();
+  $("#loginBtn").onclick = async ()=>{
+    $("#loginErr").textContent = "";
+    try{ await mod.signInWithPopup(auth, provider); }
+    catch(err){
+      const code = String(err && err.code || "");
+      if(code.includes("popup-blocked")){ try{ await mod.signInWithRedirect(auth, provider); return; }catch(e2){ err = e2; } }
+      if(!code.includes("popup-closed") && !code.includes("cancelled")) $("#loginErr").textContent = "로그인에 실패했어요. (" + code + ")";
+    }
+  };
+  try{ await mod.getRedirectResult(auth); }catch(err){ $("#loginErr").textContent = "로그인에 실패했어요. (" + String(err && err.code || err) + ")"; }
+
+  let started = false;
+  mod.onAuthStateChanged(auth, async user=>{
+    state.user = user;
+    if(!user){ show("login"); return; }
+    if(started) return; started = true;
+    let st = null;
+    try{ st = await loadSettings(); }
+    catch(err){
+      show("work"); msg(explainFs(err, "설정을 읽지"), "err", false);
+      $("#acts").replaceChildren(link(plainUrl || homeUrl, plainUrl ? "그냥 Google Docs 열기" : "홈으로", true)); return;
+    }
+    if(wantSetup || !st){ openSetup(st); return; }
+    await run(st);
+  });
+})();
+
+function explainFs(err, what){
+  const code = String(err && err.code || "");
+  if(code.includes("permission-denied")) return `Firestore 규칙이 막고 있어서 ${what} 못했어요. 가이드의 "규칙 확인" 항목을 보세요. (bookmarks/settings, bookmarks/readpos 문서에 읽기·쓰기 허용 필요)`;
+  if(code.includes("unavailable") || code.includes("network")) return `네트워크 문제로 ${what} 못했어요.`;
+  return `${what} 못했어요: ${code || (err && err.message) || err}`;
+}
+
+async function loadSettings(){
+  const snap = await mod.getDoc(settingsRef);
+  const rp = snap.exists() ? (snap.data().readpos || null) : null;
+  if(!rp || !rp.url || !rp.key) return null;
+  return { url: rp.url, key: rp.key, marker: rp.marker || DEFAULT_MARKER };
+}
+
+/* ── 설정 화면 ── */
+function openSetup(st){
+  show("setup");
+  if(st){ $("#fUrl").value = st.url; $("#fKey").value = st.key; $("#fMarker").value = st.marker; }
+  $("#setupErr").textContent = (!st && validId) ? "먼저 리졸버 연결 설정이 필요해요. 가이드 2부를 따라 배포한 뒤 아래에 입력하세요." : "";
+  $("#setupErr").classList.toggle("ok", false);
+  $("#setupBack").onclick = e=>{ e.preventDefault(); if(validId && st) run(st); else location.href = homeUrl; };
+  $("#testBtn").onclick = async ()=>{
+    const v = readForm(); if(!v) return;
+    $("#setupErr").classList.remove("ok"); $("#setupErr").textContent = "연결 확인 중…";
+    try{
+      const r = await callResolver(v.url, { action:"ping" }, 20000);
+      if(r && r.ok){
+        $("#setupErr").classList.add("ok");
+        $("#setupErr").textContent = `연결됨 (v${r.version}) · 비밀키 ${r.keySet ? "설정됨" : "없음 — 스크립트 속성에 KEY를 추가하세요"}`;
+      }else $("#setupErr").textContent = "응답이 이상해요: " + JSON.stringify(r).slice(0, 200);
+    }catch(err){ $("#setupErr").textContent = "연결 실패: " + explainFetch(err) ; }
+  };
+  $("#saveBtn").onclick = async ()=>{
+    const v = readForm(); if(!v) return;
+    $("#setupErr").classList.remove("ok"); $("#setupErr").textContent = "저장 중…";
+    try{
+      await mod.setDoc(settingsRef, { readpos: { url: v.url, key: v.key, marker: v.marker, updatedAt: Date.now() } }, { merge: true });
+      state.settings = v;
+      if(validId) run(v);
+      else { $("#setupErr").classList.add("ok"); $("#setupErr").textContent = "저장했어요. 북마크 홈에서 Google Docs 북마크를 눌러 보세요."; }
+    }catch(err){ $("#setupErr").textContent = explainFs(err, "설정을 저장하지"); }
+  };
+}
+function readForm(){
+  const url = $("#fUrl").value.trim(), key = $("#fKey").value.trim(), marker = $("#fMarker").value.trim() || DEFAULT_MARKER;
+  $("#setupErr").classList.remove("ok");
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)){ $("#setupErr").textContent = "리졸버 주소는 https://script.google.com/macros/s/…/exec 형태여야 해요."; return null; }
+  if(key.length < 8){ $("#setupErr").textContent = "비밀키는 8자 이상으로 해주세요."; return null; }
+  if(marker.length < 2){ $("#setupErr").textContent = "마커는 2자 이상으로 해주세요(본문에 자연히 나오지 않는 조합)."; return null; }
+  return { url, key, marker };
+}
+function explainFetch(err){
+  if(err && err.name === "AbortError") return "응답 시간 초과";
+  const m = String(err && err.message || err);
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "요청이 차단됐어요. 배포 설정이 '액세스: 모든 사용자'인지, 주소가 /exec로 끝나는지 확인하세요.";
+  return m;
+}
+
+/* ── 리졸버 호출 ── */
+async function callResolver(url, params, timeoutMs){
+  const u = new URL(url);
+  for(const [k, v] of Object.entries(params)) if(v != null && v !== "") u.searchParams.set(k, v);
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), timeoutMs || 30000);
+  try{
+    const r = await fetch(u.toString(), { method:"GET", redirect:"follow", cache:"no-store", signal: ctl.signal });
+    const txt = await r.text();
+    try{ return JSON.parse(txt); }
+    catch(e){ throw new Error(`응답을 해석할 수 없어요 (HTTP ${r.status}). 배포가 '웹 앱 · 모든 사용자'인지 확인하세요.`); }
+  }finally{ clearTimeout(t); }
+}
+
+/* ── 본 흐름 ── */
+async function run(st){
+  show("work");
+  $("#docTitle").textContent = docName || "Google Docs 문서";
+  $("#docSub").textContent = "";
+  msg("위치 확인 중… (문서에서 마커를 찾아 북마크로 바꾸는 중)", "", true);
+  $("#acts").replaceChildren(); $("#snip").classList.add("hidden"); $("#hint").textContent = "";
+  setLinks([[plainUrl, "처음부터 열기"], [homeUrl, "홈으로"], ["?setup=1&id=" + encodeURIComponent(docId) + "&n=" + encodeURIComponent(docName), "⚙ 설정"]]);
+
+  let prev = null, prevErr = null;
+  try{ const snap = await mod.getDoc(readposRef); prev = snap.exists() ? (snap.data()[docId] || null) : null; }
+  catch(err){ prevErr = err; }
+
+  let res = null, callErr = null;
+  try{
+    res = await callResolver(st.url, { action:"resolve", doc: docId, key: st.key, marker: st.marker, prev: prev && prev.bm ? prev.bm : "" }, 30000);
+  }catch(err){ callErr = err; }
+
+  const now = Date.now();
+  let url = plainUrl, note = "", kind = "ok", bm = null, tab = null, multiTab = false, snippet = "";
+  if(res && res.ok){
+    bm = res.bookmarkId || null; tab = res.tabId || null; multiTab = !!res.multiTab;
+    snippet = res.snippet || (prev && prev.snippet) || "";
+    url = res.url || buildUrl(docId, tab, bm, multiTab);
+    if(bm && res.changed) note = `새 마커(${st.marker})를 찾아 위치를 저장했어요.`;
+    else if(bm) note = `마지막 저장 위치로 열어요.${prev && prev.at ? " (" + fmtTime(prev.at) + " 저장" + (prev.dev ? ", " + (prev.dev === "pc" ? "PC" : "모바일") : "") + ")" : ""}`;
+    else { note = `저장된 위치가 없어서 처음부터 열어요. 읽다가 멈출 때 그 자리에 ${st.marker} 를 입력해 두세요.`; kind = "warn"; }
+    if(res.note) note += " " + res.note;
+    try{
+      const rec = { bm, tab, multiTab, title: res.title || docName || "", snippet, para: (typeof res.para === "number" ? res.para : -1),
+                    at: res.changed ? now : ((prev && prev.at) || (bm ? now : null)), opened: now, dev: isMobile ? "mobile" : "pc" };
+      await mod.setDoc(readposRef, { [docId]: rec }, { merge: true });
+    }catch(err){ note += " · " + explainFs(err, "위치를 저장하지"); kind = "warn"; }
+  }else{
+    const why = res ? (res.error || "알 수 없는 오류") : explainFetch(callErr);
+    kind = "warn";
+    if(prev && prev.bm){ bm = prev.bm; tab = prev.tab || null; multiTab = !!prev.multiTab; snippet = prev.snippet || ""; url = buildUrl(docId, tab, bm, multiTab); note = `리졸버 연결 실패 — 마지막 저장 위치로 열어요. (${why})`; }
+    else { note = `리졸버 연결 실패 — 처음부터 열어요. (${why})`; kind = "err"; }
+    if(res && res.error === "unauthorized") note += " 비밀키가 스크립트 속성 KEY와 다른 것 같아요.";
+    dbg({ res, err: callErr && String(callErr), prev });
+  }
+  if(prevErr) note += " · " + explainFs(prevErr, "저장된 위치를 읽지");
+
+  msg(note, kind, false);
+  if(snippet){ $("#snipText").textContent = snippet; $("#snip").classList.remove("hidden"); }
+  go(url, bm);
+}
+
+function go(url, bm){
+  const acts = $("#acts");
+  if(!isMobile){
+    acts.replaceChildren(link(url, bm ? "📖 지금 열기" : "문서 열기", true));
+    $("#hint").textContent = "잠시 후 자동으로 열려요.";
+    setTimeout(()=>{ location.replace(url); }, 500);
+    return;
+  }
+  const mode = store.get(MODE_KEY) || "app";
+  if(mode === "browser"){
+    acts.replaceChildren(link(url, bm ? "📖 지금 열기" : "문서 열기", true));
+    $("#hint").textContent = "브라우저 모드: 잠시 후 자동으로 열려요. (모바일 웹 Docs는 위치 이동을 지원하지 않아요)";
+    setTimeout(()=>{ location.replace(url); }, 500);
+    return;
+  }
+  const a = link(url, bm ? "📖 이어 읽기" : "📄 문서 열기", true);
+  acts.replaceChildren(a);
+  const sw = el("button", "btn small", "브라우저로 열기");
+  sw.addEventListener("click", ()=>{ location.href = url; });
+  acts.appendChild(sw);
+  $("#hint").textContent = bm ? "버튼을 누르면 Docs 앱이 마지막 위치에서 열려요." : "버튼을 누르면 Docs 앱이 열려요.";
+}
+</script>
+</body>
+</html>
