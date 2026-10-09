@@ -11,7 +11,7 @@
 
 | 구성 요소 | 위치 | 역할 |
 |---|---|---|
-| `beta.html` | GitHub Pages | 북마크 홈 (index.html + Docs 링크 인식) |
+| `index.html` | GitHub Pages | 북마크 홈 (Docs 링크 인식 포함) |
 | `open.html` | GitHub Pages | 홈 → 문서 사이의 중간 페이지, 설정 화면 |
 | `apps-script/resolver.gs` | 내 Google 계정의 Apps Script | 마커 → 북마크 변환 |
 | Firestore `bookmarks/settings`, `bookmarks/readpos` | Firebase | 연결 설정, 문서별 마지막 위치 |
@@ -45,13 +45,13 @@
 
 ## 2부. 북마크 홈 연결 (1회)
 
-1. PC에서 <https://sanjeokyo.github.io/beta.html> 접속(로그인 상태) → 오른쪽 위 **⋮ 설정** → **Google Docs 이어 읽기 설정**.
+1. PC에서 <https://sanjeokyo.github.io/> 접속(로그인 상태) → 오른쪽 위 **⋮ 설정** → **Google Docs 이어 읽기 설정**.
 2. 설정 화면에 입력:
    - 리졸버 주소: 1부 5단계의 `…/exec` URL
    - 비밀키: 1부 3단계의 `KEY` 값
    - 마커: `,,,` (기본값)
 3. **연결 테스트** → `연결됨 (v…) · 비밀키 설정됨` 확인 → **저장**.
-4. 설정은 내 계정의 Firestore에 저장되므로 폰에서는 다시 입력할 필요가 없습니다. 폰에서는 `beta.html` → 설정 → 이어 읽기 설정에서 **모바일 열기 방식**만 고릅니다.
+4. 설정은 내 계정의 Firestore에 저장되므로 폰에서는 다시 입력할 필요가 없습니다. 폰에서는 홈 → 설정 → 이어 읽기 설정에서 **모바일 열기 방식**만 고릅니다.
    - **Docs 앱** (앱 설치 폰): "📖 이어 읽기" 버튼을 한 번 더 누르면 앱이 마지막 위치에서 열립니다. 편집·하이라이트·마커 입력 모두 앱에서.
    - **브라우저** (앱 없는 폰·태블릿): 읽기 전용 화면(`…/mobilebasic#북마크ID`)이 마지막 위치에서 바로 열립니다. 하이라이트·댓글·마커(`,,,`) 입력은 "✏ 편집으로 열기"로 모바일 웹 편집기를 열어서 합니다(이 편집기는 위치 이동을 지원하지 않습니다).
 
@@ -120,6 +120,11 @@ service cloud.firestore {
 - `bookmarks/readpos` → `{ <문서ID>: { bm, tab, multiTab, title, snippet, para, at, opened, dev } }`
   - `bm` 북마크 ID · `tab` 탭 ID(탭 문서만) · `snippet` 위치 뒤 80자 · `para` 본문 문단 번호 · `at` 위치 저장 시각 · `opened` 마지막 열람 · `dev` pc/mobile
   - `snippet`·`para`는 나중에 "읽기 모드(B안)"를 붙일 때 그대로 재사용합니다.
+
+## 6.5부. index.html 반영 기록 (2026-10-09)
+
+- 베타(`beta.html` 런타임 덧씨우기)로 PC↔폰 왕복을 확인한 뒤, 같은 7줄 변경을 `index.html`에 직접 반영 (커밋 ca4f2d2, md5 `1f913738684a749c2d096d47d3fa7b7e`로 로컬 검증본과 바이트 단위 일치 확인). `beta.html`은 삭제.
+- 적용 도구 `tools/readpos_patch.py`와 1회용 워크플로는 적용 후 삭제. 나중에 index.html을 다시 올릴 때는 이 7줄(docsIdOf, chip.href, 📖, 설정 메뉴 2곳)이 유지되는지만 확인하면 됩니다.
 
 ## 7부. 리졸버 API (참고)
 
