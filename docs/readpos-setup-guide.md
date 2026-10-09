@@ -123,7 +123,7 @@ service cloud.firestore {
 
 ## 6.5부. index.html 반영 기록 (2026-10-09)
 
-- 베타(`beta.html` 런타임 덧씼우기)로 PC↔폰 왕복을 확인한 뒤, 같은 7줄 변경을 `index.html`에 직접 반영 (커밋 ca4f2d2, md5 `1f913738684a749c2d096d47d3fa7b7e`로 로컬 검증본과 바이트 단위 일치 확인). `beta.html`은 삭제.
+- 베타(`beta.html` 런타임 덧씌우기)로 PC↔폰 왕복을 확인한 뒤, 같은 7줄 변경을 `index.html`에 직접 반영 (커밋 ca4f2d2, md5 `1f913738684a749c2d096d47d3fa7b7e`로 로컬 검증본과 바이트 단위 일치 확인). `beta.html`은 삭제.
 - 적용 도구 `tools/readpos_patch.py`와 1회용 워크플로는 적용 후 삭제. 나중에 index.html을 다시 올릴 때는 이 7줄(docsIdOf, chip.href, 📖, 설정 메뉴 2곳)이 유지되는지만 확인하면 됩니다.
 
 ## 7부. 리졸버 API (참고)
