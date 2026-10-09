@@ -358,8 +358,9 @@ async function run(st){
   }else{
     const why = res ? (res.error || "알 수 없는 오류") : explainFetch(callErr);
     kind = "warn";
-    if(prev && prev.bm){ bm = prev.bm; tab = prev.tab || null; multiTab = !!prev.multiTab; snippet = prev.snippet || ""; url = buildUrl(docId, tab, bm, multiTab); note = `리졸버 연결 실패 — 마지막 저장 위치로 열어요. (${why})`; }
-    else { note = `리졸버 연결 실패 — 처음부터 열어요. (${why})`; kind = "err"; }
+    const head = res ? "리졸버 오류" : "리졸버 연결 실패";
+    if(prev && prev.bm){ bm = prev.bm; tab = prev.tab || null; multiTab = !!prev.multiTab; snippet = prev.snippet || ""; url = buildUrl(docId, tab, bm, multiTab); note = `${head} — 마지막 저장 위치로 열어요. (${why})`; }
+    else { note = `${head} — 처음부터 열어요. (${why})`; kind = "err"; }
     if(res && res.error === "unauthorized") note += " 비밀키가 스크립트 속성 KEY와 다른 것 같아요.";
     dbg({ res, err: callErr && String(callErr), prev });
   }

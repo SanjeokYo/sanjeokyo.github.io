@@ -20,7 +20,7 @@
  *       [&prev=이전북마크ID] [&marker=,,,] [&dry=1]   dry=1 이면 찾기만 하고 수정 없음
  */
 
-var VERSION = "2026-10-09.1";
+var VERSION = "2026-10-09.2";
 var DEFAULT_MARKER = ",,,";
 var SNIPPET_LEN = 80;      // 위치 뒤 미리보기 글자 수 (나중에 읽기 모드에서 재사용)
 
@@ -93,9 +93,8 @@ function resolve_(docId, prevId, marker, dry) {
     while (ti > 0 && !hits[ti]) ti--;
     var target = tabs[ti];
     var body = target.docTab.getBody();
-    var r = nthHit_(body, pattern, hits[ti] - 1);
-    var tEl = r.getElement().asText();
-    var s = r.getStartOffsetInclusive(), en = r.getEndOffsetInclusive();
+    var hit = rangeOf_(nthHit_(body, pattern, hits[ti] - 1));
+    var tEl = hit.el, s = hit.s, en = hit.e;
     var full = tEl.getText();
     res.snippet = full.substring(en + 1, en + 1 + SNIPPET_LEN).trim() ||
                   full.substring(Math.max(0, s - SNIPPET_LEN), s).trim();
@@ -116,10 +115,9 @@ function resolve_(docId, prevId, marker, dry) {
     // 5) 남은 마커를 다시 찾아 삭제하고, 그 자리에 북마크 생성
     var r2 = body.findText(pattern);
     if (!r2) throw new Error("마커를 다시 찾지 못했어요");
-    var el2 = r2.getElement().asText();
-    var s2 = r2.getStartOffsetInclusive(), e2 = r2.getEndOffsetInclusive();
-    removeRange_(el2, s2, e2);
-    var bm = target.docTab.addBookmark(target.docTab.newPosition(el2, s2));
+    var h2 = rangeOf_(r2);
+    removeRange_(h2.el, h2.s, h2.e);
+    var bm = target.docTab.addBookmark(target.docTab.newPosition(h2.el, h2.s));
 
     // 6) 이전 북마크(이 시스템이 만든 것만) 제거
     if (prevId && prevId !== bm.getId()) {
@@ -162,7 +160,8 @@ function tabsOf_(doc) {
       for (var i = 0; i < tabs.length; i++) {
         var t = tabs[i];
         try {
-          if (String(t.getType()) === "DOCUMENT_TAB")
+          var tt = t.getType();
+          if (tt === DocumentApp.TabType.DOCUMENT_TAB || String(tt) === "DOCUMENT_TAB")
             list.push({ id: t.getId(), title: t.getTitle(), docTab: t.asDocumentTab() });
         } catch (e) {}
         try { if (typeof t.getChildTabs === "function") walk(t.getChildTabs()); } catch (e) {}
@@ -190,8 +189,17 @@ function deleteHits_(body, pattern, count) {
   for (var i = 0; i < count; i++) {
     var r = body.findText(pattern);
     if (!r) break;
-    removeRange_(r.getElement().asText(), r.getStartOffsetInclusive(), r.getEndOffsetInclusive());
+    var h = rangeOf_(r);
+    removeRange_(h.el, h.s, h.e);
   }
+}
+
+/** 검색 결과 → {el, s, e}. RangeElement는 요소 전체가 일치하면 오프셋을 -1로 주므로(공식 레퍼런스) 전체 범위로 보정. */
+function rangeOf_(r) {
+  var el = r.getElement().asText();
+  var s = r.getStartOffset(), e = r.getEndOffsetInclusive();
+  if (s < 0 || e < 0) { s = 0; e = el.getText().length - 1; }
+  return { el: el, s: s, e: e };
 }
 
 /** 텍스트 요소에서 [s, e] 구간 삭제. 요소 전체가 마커면 빈 문자열로 (빈 줄만 남음). */
