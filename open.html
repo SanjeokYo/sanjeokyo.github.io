@@ -158,12 +158,12 @@ const docName = (qs.get("n") || "").trim();
 const wantSetup = qs.get("setup") === "1";
 const validId = /^[A-Za-z0-9_-]{10,}$/.test(docId);
 const plainUrl = validId ? `https://docs.google.com/document/d/${docId}/edit` : "";
-const isMobile = (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean")
-  ? navigator.userAgentData.mobile : /Android|iPhone|iPod|Mobile/i.test(navigator.userAgent);
+const isMobile = !!(navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPod|Mobile/i.test(navigator.userAgent);
 const homeUrl = (()=>{ try{ const r = new URL(document.referrer); if(r.origin === location.origin && !/open\.html$/.test(r.pathname)) return r.pathname; }catch(e){} return "./"; })();
 
 /* ── UI 도우미 ── */
-function show(id){ for(const s of ["sLogin","sSetup","sWork"]) $("#"+s).classList.toggle("hidden", s !== id); }
+const SCREENS = { login:"#sLogin", setup:"#sSetup", work:"#sWork" };
+function show(id){ for(const [key, sel] of Object.entries(SCREENS)) $(sel).classList.toggle("hidden", key !== id); }
 function msg(text, kind, spinning){
   $("#msg").textContent = text;
   $("#status").className = "status" + (kind ? " " + kind : "");
@@ -173,6 +173,9 @@ function el(tag, cls, text){ const n = document.createElement(tag); if(cls) n.cl
 function link(href, text, primary){ const a = el("a", "btn" + (primary ? " primary" : " small"), text); a.href = href; a.rel = "noopener"; return a; }
 function setLinks(items){ const box = $("#links"); box.innerHTML = ""; for(const [href, text, onclick] of items){ const a = el("a", null, text); a.href = href; if(onclick) a.addEventListener("click", e=>{ e.preventDefault(); onclick(); }); box.appendChild(a); } }
 function dbg(obj){ try{ $("#dbg").classList.remove("hidden"); $("#dbgText").textContent = JSON.stringify(obj, null, 1); }catch(e){} }
+function withTimeout(p, ms, label){ return Promise.race([p, new Promise((_, rej)=>setTimeout(()=>rej(Object.assign(new Error(label + " 시간 초과 (" + Math.round(ms/1000) + "초)"), { code:"timeout" })), ms))]); }
+window.addEventListener("error", e=>{ show("work"); msg("페이지 오류: " + (e.message || e.error), "err", false); dbg({ error: String(e.error || e.message), where: e.filename + ":" + e.lineno }); });
+window.addEventListener("unhandledrejection", e=>{ show("work"); msg("처리되지 않은 오류: " + (e.reason && (e.reason.message || e.reason.code) || e.reason), "err", false); dbg({ reason: String(e.reason && (e.reason.stack || e.reason)) }); });
 function fmtTime(ms){ if(!ms) return ""; const d = new Date(ms); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
 function buildUrl(id, tab, bm, multiTab){ let u = `https://docs.google.com/document/d/${id}/edit`; if(multiTab && tab) u += "?tab=" + encodeURIComponent(tab); if(bm) u += "#bookmark=" + bm; return u; }
 
@@ -194,7 +197,9 @@ paintMode();
   let cfg = (typeof EMBEDDED_FIREBASE_CONFIG === "object" && EMBEDDED_FIREBASE_CONFIG) ? EMBEDDED_FIREBASE_CONFIG : null;
   if(!cfg){ try{ cfg = JSON.parse(store.get(CFG_KEY) || "null"); }catch(e){ cfg = null; } }
   if(!cfg){ show("work"); msg("Firebase 연결 설정이 없어요. 북마크 홈을 먼저 설정한 뒤 다시 열어주세요.", "err", false); setLinks([[homeUrl, "홈으로"]]); return; }
-  if(validId){ show("work"); msg("연결 중…", "", true); }
+  if(!validId) $("#docTitle").textContent = "이어 읽기 설정";
+  show("work"); msg(validId ? "연결 중… (연결 모듈 불러오기)" : "설정 화면 준비 중… (연결 모듈 불러오기)", "", true);
+  setLinks([[homeUrl, "홈으로"]]);
   try{
     const [appM, authM, fsM] = await Promise.all([
       import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-app.js`),
@@ -222,26 +227,31 @@ paintMode();
       if(!code.includes("popup-closed") && !code.includes("cancelled")) $("#loginErr").textContent = "로그인에 실패했어요. (" + code + ")";
     }
   };
-  try{ await mod.getRedirectResult(auth); }catch(err){ $("#loginErr").textContent = "로그인에 실패했어요. (" + String(err && err.code || err) + ")"; }
+  msg(validId ? "연결 중… (로그인 확인)" : "설정 화면 준비 중… (로그인 확인)", "", true);
+  try{ await withTimeout(mod.getRedirectResult(auth), 15000, "로그인 확인"); }catch(err){ $("#loginErr").textContent = "로그인에 실패했어요. (" + String(err && err.code || err) + ")"; }
 
   let started = false;
+  const authWatch = setTimeout(()=>{ if(!started && !state.user){ msg("로그인 상태를 확인하지 못했어요. 아래에서 다시 로그인해 주세요.", "warn", false); show("login"); } }, 15000);
   mod.onAuthStateChanged(auth, async user=>{
     state.user = user;
-    if(!user){ show("login"); return; }
-    if(started) return; started = true;
-    let st = null;
-    try{ st = await loadSettings(); }
-    catch(err){
-      show("work"); msg(explainFs(err, "설정을 읽지"), "err", false);
-      $("#acts").replaceChildren(link(plainUrl || homeUrl, plainUrl ? "그냥 Google Docs 열기" : "홈으로", true)); return;
+    if(!user){ clearTimeout(authWatch); show("login"); return; }
+    if(started) return; started = true; clearTimeout(authWatch);
+    msg(validId ? "연결 중… (설정 읽기)" : "설정 화면 준비 중… (설정 읽기)", "", true);
+    let st = null, stErr = null;
+    try{ st = await withTimeout(loadSettings(), 12000, "설정 읽기"); }
+    catch(err){ stErr = err; }
+    if(stErr && !wantSetup && validId){
+      show("work"); msg(explainFs(stErr, "설정을 읽지"), "err", false);
+      $("#acts").replaceChildren(link(plainUrl, "그냥 Google Docs 열기", true)); return;
     }
-    if(wantSetup || !st){ openSetup(st); return; }
+    if(wantSetup || !st){ openSetup(st, stErr); return; }
     await run(st);
   });
 })();
 
 function explainFs(err, what){
   const code = String(err && err.code || "");
+  if(code === "timeout") return `${what} 못했어요 (시간 초과). 이 네트워크가 Firestore 연결을 막고 있을 수 있어요. 북마크 홈이 "동기화됨"으로 뜨는지 확인해 보세요.`;
   if(code.includes("permission-denied")) return `Firestore 규칙이 막고 있어서 ${what} 못했어요. 가이드의 "규칙 확인" 항목을 보세요. (bookmarks/settings, bookmarks/readpos 문서에 읽기·쓰기 허용 필요)`;
   if(code.includes("unavailable") || code.includes("network")) return `네트워크 문제로 ${what} 못했어요.`;
   return `${what} 못했어요: ${code || (err && err.message) || err}`;
@@ -255,11 +265,12 @@ async function loadSettings(){
 }
 
 /* ── 설정 화면 ── */
-function openSetup(st){
+function openSetup(st, stErr){
   show("setup");
   if(st){ $("#fUrl").value = st.url; $("#fKey").value = st.key; $("#fMarker").value = st.marker; }
-  $("#setupErr").textContent = (!st && validId) ? "먼저 리졸버 연결 설정이 필요해요. 가이드 2부를 따라 배포한 뒤 아래에 입력하세요." : "";
   $("#setupErr").classList.toggle("ok", false);
+  if(stErr) $("#setupErr").textContent = "저장된 설정을 읽지 못했어요 — " + explainFs(stErr, "설정을 읽지") + " 입력 후 저장하면 다시 시도해요.";
+  else $("#setupErr").textContent = (!st && validId) ? "먼저 리졸버 연결 설정이 필요해요. 가이드 1부를 따라 배포한 뒤 아래에 입력하세요." : "";
   $("#setupBack").onclick = e=>{ e.preventDefault(); if(validId && st) run(st); else location.href = homeUrl; };
   $("#testBtn").onclick = async ()=>{
     const v = readForm(); if(!v) return;
@@ -321,7 +332,7 @@ async function run(st){
   setLinks([[plainUrl, "처음부터 열기"], [homeUrl, "홈으로"], ["?setup=1&id=" + encodeURIComponent(docId) + "&n=" + encodeURIComponent(docName), "⚙ 설정"]]);
 
   let prev = null, prevErr = null;
-  try{ const snap = await mod.getDoc(readposRef); prev = snap.exists() ? (snap.data()[docId] || null) : null; }
+  try{ const snap = await withTimeout(mod.getDoc(readposRef), 12000, "저장된 위치 읽기"); prev = snap.exists() ? (snap.data()[docId] || null) : null; }
   catch(err){ prevErr = err; }
 
   let res = null, callErr = null;
